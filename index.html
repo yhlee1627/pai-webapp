@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>피지컬 AI 실습 웹앱 — micro:bit 서보</title>
+<title>피지컬 AI 실습 웹앱 — micro:bit 분류 로봇</title>
 <style>
   :root{
     --bg:#f4f6f9; --card:#ffffff; --ink:#1b2230; --sub:#5d6677; --line:#e2e6ec;
@@ -21,7 +21,7 @@
   h1{font-size:18px;margin:0;letter-spacing:-0.2px}
   h1 small{font-weight:400;color:var(--sub);font-size:13px;margin-left:6px}
   h2{font-size:16px;margin:0}
-  h3{font-size:14px;margin:14px 0 6px;color:var(--sub);font-weight:600}
+  h3{font-size:14px;margin:16px 0 6px;color:var(--sub);font-weight:600}
   .chips{display:flex;gap:8px;flex-wrap:wrap}
   .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:#eef1f5;
         font-size:13px;color:var(--sub);white-space:nowrap}
@@ -43,11 +43,12 @@
   .btn.primary:hover{background:#2560d6}
   .btn.danger{color:var(--bad)}
   .btn.big{padding:14px 22px;font-size:17px;font-weight:600}
+  .btn.rec{background:var(--bad);border-color:var(--bad);color:#fff}
   kbd{font-family:inherit;font-size:12px;border:1px solid rgba(255,255,255,.6);border-radius:5px;padding:0 5px;margin-left:6px;opacity:.85}
-  .btn:not(.primary) kbd{border-color:var(--line)}
+  .btn:not(.primary):not(.rec) kbd{border-color:var(--line)}
   select,input[type=text],input[type=password],input[type=number],input[type=url],textarea{
     border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;min-width:0}
-  textarea{width:100%;min-height:70px;resize:vertical}
+  textarea{width:100%;min-height:60px;resize:vertical}
   label.toggle{display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
   .videoBox{position:relative;background:#0f141c;border-radius:10px;overflow:hidden;aspect-ratio:4/3;margin:10px 0}
   .videoBox video{width:100%;height:100%;object-fit:contain;display:block}
@@ -55,21 +56,23 @@
   .shot{width:100%;max-height:180px;object-fit:contain;background:#0f141c;border-radius:8px;display:none}
   .log{height:96px;overflow:auto;background:#f7f8fa;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:ui-monospace,Consolas,monospace;font-size:12.5px}
   .log .out{color:var(--accent)} .log .in{color:var(--ok)} .log .sys{color:var(--sub)}
-  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:-4px -4px 14px;padding:0 4px;overflow-x:auto}
-  .tab{border:none;background:none;padding:10px 14px;cursor:pointer;color:var(--sub);border-bottom:2px solid transparent;white-space:nowrap}
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:-4px -4px 14px;padding:0 4px;overflow-x:auto}
+  .tab{border:none;background:none;padding:10px 12px;cursor:pointer;color:var(--sub);border-bottom:2px solid transparent;white-space:nowrap}
+  .tab small{font-size:11px;opacity:.8;margin-left:3px}
   .tab[aria-selected=true]{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
   .panel{display:none} .panel.active{display:block}
   .lead{margin:0 0 12px;color:var(--sub)}
-  .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:8px 0 14px}
-  .pad button{border:1px solid var(--line);background:#fff;border-radius:12px;padding:22px 8px;cursor:pointer;font-size:28px;line-height:1.1}
-  .pad button span{display:block;font-size:15px;margin-top:6px;color:var(--sub)}
+  .lead b{color:var(--ink)}
+  .pad{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:8px 0 14px}
+  .pad button{border:1px solid var(--line);background:#fff;border-radius:12px;padding:20px 6px;cursor:pointer;font-size:26px;line-height:1.1}
+  .pad button span{display:block;font-size:14px;margin-top:6px;color:var(--sub)}
   .pad button:active,.pad button.flash{background:var(--accent-soft);border-color:var(--accent)}
   .field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
   .field label{font-size:13px;color:var(--sub)}
   .condbar{display:flex;gap:8px;align-items:center;background:var(--accent-soft);border-radius:10px;padding:8px 12px;margin-bottom:14px}
   .condbar input{flex:1}
   .result{border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:14px}
-  .result .big{font-size:28px;font-weight:700;margin-bottom:6px}
+  .result .big{font-size:26px;font-weight:700;margin-bottom:6px}
   .result.err{background:var(--bad-soft);border-color:#f2c9c9}
   dl.kv{display:grid;grid-template-columns:110px 1fr;gap:4px 10px;margin:8px 0;font-size:14px}
   dl.kv dt{color:var(--sub)} dl.kv dd{margin:0;word-break:break-all}
@@ -85,24 +88,83 @@
   td.v-O{color:var(--ok);font-weight:600} td.v-X{color:var(--bad);font-weight:600}
   .note{background:var(--warn-soft);border-radius:10px;padding:10px 12px;font-size:13.5px;margin:10px 0}
   .note.blue{background:var(--accent-soft)}
-  pre.code{background:#0f141c;color:#e6edf3;border-radius:10px;padding:12px;overflow:auto;font-size:12.5px;line-height:1.45}
+  pre.code{background:#0f141c;color:#e6edf3;border-radius:10px;padding:12px;overflow:auto;font-size:12.5px;line-height:1.45;max-height:360px}
   ol.steps{padding-left:20px;margin:6px 0} ol.steps li{margin:4px 0}
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b2230;color:#fff;padding:10px 16px;border-radius:10px;
          font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:20}
   .toast.show{opacity:.95} .toast.bad{background:var(--bad)} .toast.warn{background:#8a5a00} .toast.ok{background:var(--ok)}
   .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-right:6px}
+  .btn:not(.primary) .spinner{border-color:rgba(0,0,0,.2);border-top-color:var(--accent)}
   @keyframes spin{to{transform:rotate(360deg)}}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   @media (max-width:600px){.grid2{grid-template-columns:1fr}}
   .hidden{display:none !important}
+  /* 규칙 */
+  .split{display:grid;grid-template-columns:1fr 200px;gap:14px;align-items:start}
+  @media (max-width:640px){.split{grid-template-columns:1fr}}
+  .viewBox{width:200px;height:150px;background:#0f141c;border-radius:10px;display:block}
+  .swatches{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .sw{width:30px;height:30px;border-radius:8px;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}
+  .sw.sel{box-shadow:0 0 0 3px var(--accent)}
+  .swatches input[type=color]{width:36px;height:32px;padding:0 2px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer}
+  .counts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 12px}
+  @media (max-width:600px){.counts{grid-template-columns:1fr}}
+  .cnt{border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;font-size:14px}
+  .cnt i{width:14px;height:14px;border-radius:4px;display:inline-block;flex:none}
+  .cnt b{margin-left:auto;font-size:18px}
+  /* 학습 모델 */
+  .tmRows{display:flex;flex-direction:column;gap:6px;margin:6px 0 12px}
+  .tmRow{display:grid;grid-template-columns:minmax(80px,1.1fr) 2fr minmax(170px,1.4fr);gap:10px;align-items:center;
+         border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+  .tmRow.top{border-color:var(--accent);background:var(--accent-soft)}
+  .tmName{font-weight:600;word-break:break-all}
+  .tmBar{position:relative;height:22px;background:#eef1f5;border-radius:6px;overflow:hidden}
+  .tmBar i{position:absolute;left:0;top:0;bottom:0;background:#9db8f5;border-radius:6px;width:0;transition:width .2s}
+  .tmRow.top .tmBar i{background:var(--accent)}
+  .tmBar b{position:absolute;right:4px;top:2px;font-size:12.5px;font-weight:600;line-height:18px;
+           background:rgba(255,255,255,.9);padding:0 6px;border-radius:4px}
+  .tmAct{display:flex;gap:6px;align-items:center}
+  .tmAct select{flex:1;min-width:0}
+  .tmAct input{width:70px}
+  @media (max-width:600px){.tmRow{grid-template-columns:1fr}}
+  /* VLM */
+  .presetRow{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .presetRow .btn{padding:4px 10px;font-size:13px}
+  .reason{background:#f7f8fa;border-left:3px solid var(--accent);border-radius:6px;padding:8px 10px;margin:6px 0 4px;font-size:14px;white-space:pre-wrap}
+  .fiveSum{font-weight:600;margin:8px 0}
+  /* 시연 */
+  .demoTop{display:grid;grid-template-columns:230px 1fr;gap:14px;align-items:center;margin-bottom:12px}
+  @media (max-width:640px){.demoTop{grid-template-columns:1fr}}
+  .gauge{border:1px solid var(--line);border-radius:12px;padding:10px 12px;text-align:center}
+  .trayViz{height:64px;position:relative}
+  .trayViz .bar{position:absolute;left:18px;right:18px;top:28px;height:8px;background:var(--ink);border-radius:4px;transition:transform .08s}
+  .trayViz .pivot{position:absolute;left:50%;top:38px;width:0;height:0;margin-left:-9px;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:16px solid var(--accent)}
+  .trayViz .boxL,.trayViz .boxR{position:absolute;bottom:0;width:30px;height:14px;border:2px solid var(--sub);border-top:none}
+  .trayViz .boxL{left:0} .trayViz .boxR{right:0}
+  .gauge b{font-size:22px}
+  .ctlRow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .ctlRow .btn{padding:12px 6px}
+  .demoList{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+  .demoItem{border:1px solid var(--line);border-radius:10px;padding:6px;font-size:13px;position:relative;background:#fff}
+  .demoItem img{width:100%;border-radius:6px;display:block;background:#0f141c;aspect-ratio:4/3;object-fit:cover}
+  .demoItem .x{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:6px;cursor:pointer;padding:0 7px;font-size:13px}
+  .demoItem.ref{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+  .demoItem.old{opacity:.55}
+  .cmpRow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .cmpRow figure{margin:0}
+  .cmpRow img{width:100%;border-radius:8px;background:#0f141c;aspect-ratio:4/3;object-fit:cover;display:block}
+  .cmpRow figcaption{font-size:13px;color:var(--sub);text-align:center;margin-top:4px}
+  .recState{font-weight:600}
+  .recState.on{color:var(--bad)}
 </style>
 </head>
 <body>
 <header>
-  <h1>피지컬 AI 실습 웹앱<small>micro:bit 서보 · 사람 판단 / VLM 판단</small></h1>
+  <h1>피지컬 AI 실습 웹앱<small>micro:bit 분류 로봇 · 같은 몸, 다른 두뇌</small></h1>
   <div class="chips">
     <span class="chip" id="chipMb"><span class="dot"></span><span>micro:bit 미연결</span></span>
     <span class="chip" id="chipCam"><span class="dot"></span><span>카메라 꺼짐</span></span>
+    <span class="chip" id="chipTm"><span class="dot"></span><span>학습 모델 없음</span></span>
     <span class="chip" id="chipVlm"><span class="dot"></span><span>VLM 미설정</span></span>
     <span class="chip" id="chipCalls"><span class="dot"></span><span>호출 0</span></span>
   </div>
@@ -118,10 +180,16 @@
       </div>
       <h3>주고받은 신호 (→ 보냄, ← micro:bit 응답)</h3>
       <div class="log" id="mbLog"></div>
+      <div class="row wrap" style="margin-top:10px">
+        <label class="toggle" title="L·R로 접시를 기울인 뒤 C를 보내 수평으로 되돌려요"><input type="checkbox" id="autoReturn"> 분류 뒤 수평 복귀</label>
+        <select id="returnDelay" title="기울인 뒤 수평으로 돌아오기까지 기다리는 시간">
+          <option value="1">1초 뒤</option><option value="1.5">1.5초 뒤</option><option value="2">2초 뒤</option><option value="3">3초 뒤</option>
+        </select>
+      </div>
     </section>
 
     <section class="card">
-      <div class="row between"><h2>카메라</h2><span class="hint">미리보기 = AI가 보는 사진</span></div>
+      <div class="row between"><h2>카메라</h2><span class="hint">접시 위를 내려다보게 두기</span></div>
       <div class="videoBox">
         <video id="video" playsinline muted></video>
         <div class="placeholder" id="camPlaceholder">카메라가 꺼져 있어요<br>아래 '카메라 켜기'를 누르세요</div>
@@ -129,101 +197,292 @@
       <div class="row wrap">
         <button class="btn" id="btnCam">카메라 켜기</button>
         <select id="camSelect" title="카메라 선택" class="hidden"></select>
-        <label class="toggle" title="AI에게 보내는 사진도 함께 뒤집혀요"><input type="checkbox" id="mirror"> 좌우 반전</label>
+        <label class="toggle" title="미리보기와 VLM에게 보내는 사진이 함께 뒤집혀요"><input type="checkbox" id="mirror"> 좌우 반전</label>
       </div>
-      <h3>마지막으로 AI에게 보낸 사진</h3>
-      <img id="lastShot" class="shot" alt="마지막으로 보낸 사진">
-      <div class="hint" id="noShot">아직 보낸 사진이 없어요</div>
+      <h3>마지막으로 AI가 본 사진</h3>
+      <img id="lastShot" class="shot" alt="마지막으로 AI가 본 사진">
+      <div class="hint" id="noShot">아직 AI가 본 사진이 없어요</div>
     </section>
-
   </div>
 
   <div class="col">
     <section class="card">
       <div class="condbar">
         <label for="condition" style="white-space:nowrap;font-size:14px">실험 조건</label>
-        <input type="text" id="condition" placeholder="예: 밝은 조명 / 어두운 조명 / 비슷한 물체 — 기록표에서 조건별로 묶어 보여 줘요">
+        <input type="text" id="condition" placeholder="예: 학습한 물건 / 처음 보는 물건 / 조명 변경 — 기록표에서 조건별로 묶어 보여 줘요">
       </div>
 
       <div class="tabs" role="tablist">
-        <button class="tab" role="tab" data-tab="manual" aria-selected="true">수동 조종 (사람 판단)</button>
-        <button class="tab" role="tab" data-tab="vlm" aria-selected="false">VLM 판단</button>
+        <button class="tab" role="tab" data-tab="manual" aria-selected="true">사람<small>1차시</small></button>
+        <button class="tab" role="tab" data-tab="rule" aria-selected="false">규칙<small>1차시</small></button>
+        <button class="tab" role="tab" data-tab="tm" aria-selected="false">학습 모델<small>2차시</small></button>
+        <button class="tab" role="tab" data-tab="vlm" aria-selected="false">VLM<small>3·4차시</small></button>
+        <button class="tab" role="tab" data-tab="demo" aria-selected="false">시연<small>5차시</small></button>
         <button class="tab" role="tab" data-tab="records" aria-selected="false">기록 <span id="recCount"></span></button>
-        <button class="tab" role="tab" data-tab="settings" aria-selected="false">설정 (강사용)</button>
+        <button class="tab" role="tab" data-tab="settings" aria-selected="false">설정</button>
         <button class="tab" role="tab" data-tab="help" aria-selected="false">도움말</button>
       </div>
 
-      <!-- 수동 조종 -->
+      <!-- 사람 -->
       <div class="panel active" id="panel-manual">
-        <p class="lead">카메라 화면을 보고 사람이 판단해서 명령을 보내요. 키보드 ← ↑ → 로도 보낼 수 있어요.</p>
+        <p class="lead"><b>사람이 두뇌</b> — 카메라 화면을 보고 사람이 판단해 접시를 기울여요. 키보드 ← ↑ → ↓ 로도 보낼 수 있어요.</p>
         <div class="pad">
-          <button data-cmd="L" title="L 보내기">◀<span>왼쪽 (L)</span></button>
-          <button data-cmd="C" title="C 보내기">●<span>가운데 (C)</span></button>
-          <button data-cmd="R" title="R 보내기">▶<span>오른쪽 (R)</span></button>
+          <button data-cmd="L" title="L 보내기 (←)">◀<span>왼쪽 상자 (L)</span></button>
+          <button data-cmd="C" title="C 보내기 (↑)">●<span>수평 (C)</span></button>
+          <button data-cmd="R" title="R 보내기 (→)">▶<span>오른쪽 상자 (R)</span></button>
+          <button data-cmd="N" title="N 보내기 (↓)">✕<span>보류 (N)</span></button>
         </div>
-        <label class="toggle"><input type="checkbox" id="recManual" checked> 수동 명령도 기록에 남기기</label>
-        <details>
-          <summary>직접 명령 보내기 (안전 장치 실험용)</summary>
-          <p class="hint">정해진 L·C·R 말고 다른 글자나 숫자를 보내 micro:bit 안전 장치가 무시하는지 확인할 때 써요.</p>
-          <div class="row">
-            <input type="text" id="rawCmd" placeholder="예: X, N, 170" style="flex:1">
-            <button class="btn" id="btnRaw">보내기</button>
-          </div>
-        </details>
-      </div>
-
-      <!-- VLM 판단 -->
-      <div class="panel" id="panel-vlm">
-        <p class="lead">사진을 찍어 VLM에게 물체의 위치를 묻고, 답(LEFT·CENTER·RIGHT·NONE)을 micro:bit 명령으로 바꿔 보내요.</p>
-        <div class="field">
-          <label for="target">찾을 물체</label>
-          <input type="text" id="target" value="빨간 컵">
-        </div>
-        <div class="row wrap">
-          <button class="btn primary big" id="btnAsk">찍고 묻기<kbd>Space</kbd></button>
-          <button class="btn" id="btnReask" title="방금 보낸 사진을 그대로 다시 물어봐요">같은 사진 다시 묻기</button>
-        </div>
-        <div class="row wrap" style="margin-top:10px">
-          <label class="toggle"><input type="checkbox" id="autoSend" checked> AI 답을 micro:bit로 보내기</label>
-        </div>
-
-        <div class="result hidden" id="result">
-          <div class="big" id="rBig">—</div>
-          <dl class="kv">
-            <dt>AI 원래 답</dt><dd id="rRaw">—</dd>
-            <dt>보낸 명령</dt><dd id="rSent">—</dd>
-            <dt>응답 시간</dt><dd id="rMs">—</dd>
-            <dt>질문 문장</dt><dd id="rPrompt" class="hint">—</dd>
-          </dl>
-          <div class="judge" id="judgeBox">
-            <span>이번 결과는?</span>
+        <div class="row wrap between">
+          <label class="toggle"><input type="checkbox" id="recManual"> 사람 판단도 기록에 남기기</label>
+          <div class="judge" id="manJudge" style="margin:0">
+            <span class="hint">방금 분류는?</span>
             <button class="btn" data-v="O">맞음</button>
             <button class="btn" data-v="X">틀림</button>
           </div>
         </div>
 
+        <h3>각도 직접 보내기 (4차시 '이상 명령' 실험)</h3>
+        <div class="row wrap">
+          <input type="range" id="angle" min="0" max="180" step="1" value="90" style="flex:1;min-width:180px">
+          <b id="angleVal" style="min-width:48px;text-align:right">90°</b>
+          <button class="btn" id="btnAngle">이 각도로 보내기</button>
+        </div>
+        <p class="hint" style="margin:4px 0 0">A170처럼 'A + 각도'로 보내요. 각도 명령을 받는 MakeCode 코드(도움말 탭)에서만 움직이고, 자동 복귀하지 않으니 '수평'으로 되돌리세요.</p>
+
+        <details>
+          <summary>직접 명령 보내기 (안전 장치 실험용)</summary>
+          <p class="hint">정해진 명령 말고 다른 글자나 숫자를 보내 micro:bit가 무시하는지 확인할 때 써요.</p>
+          <div class="row">
+            <input type="text" id="rawCmd" placeholder="예: X, 170, A200" style="flex:1">
+            <button class="btn" id="btnRaw">보내기</button>
+          </div>
+        </details>
+      </div>
+
+      <!-- 규칙 -->
+      <div class="panel" id="panel-rule">
+        <p class="lead"><b>규칙이 두뇌</b> — 정한 색의 픽셀 수를 세어 판단해요. 왼쪽 색이 많으면 왼쪽 상자, 오른쪽 색이 많으면 오른쪽 상자, 둘 다 최소 픽셀 수보다 적으면 보류.</p>
+        <div class="split">
+          <div>
+            <div class="field"><label>왼쪽 상자로 보낼 색</label><div class="swatches" id="swLeft"></div></div>
+            <div class="field"><label>오른쪽 상자로 보낼 색</label><div class="swatches" id="swRight"></div></div>
+            <div class="field">
+              <label for="ruleMin">최소 픽셀 수 — 이보다 적으면 '없다'고 봄</label>
+              <div class="row"><input type="range" id="ruleMin" min="20" max="4000" step="20" style="flex:1"><b id="ruleMinVal" style="min-width:60px;text-align:right"></b></div>
+            </div>
+            <div class="field">
+              <label for="ruleTol">색 범위 — 얼마나 비슷한 색까지 같은 색으로 셀까</label>
+              <div class="row"><input type="range" id="ruleTol" min="5" max="45" step="1" style="flex:1"><b id="ruleTolVal" style="min-width:60px;text-align:right"></b></div>
+            </div>
+          </div>
+          <div>
+            <canvas id="ruleView" class="viewBox" width="160" height="120" title="규칙이 센 픽셀"></canvas>
+            <div class="hint" style="text-align:center">센 픽셀을 그 색으로 표시</div>
+          </div>
+        </div>
+        <div class="counts">
+          <div class="cnt"><i id="ruleSwL"></i><span id="ruleNameL">왼쪽 색</span><b id="ruleCntL">—</b></div>
+          <div class="cnt"><i id="ruleSwR"></i><span id="ruleNameR">오른쪽 색</span><b id="ruleCntR">—</b></div>
+          <div class="cnt"><span>지금 판단</span><b id="ruleNow">—</b></div>
+        </div>
+        <div class="row wrap">
+          <button class="btn primary big" id="btnRule">판단하고 분류<kbd>Space</kbd></button>
+          <label class="toggle"><input type="checkbox" id="ruleAuto"> 자동 분류 (물건을 올리면 알아서)</label>
+          <label class="toggle"><input type="checkbox" class="autoSendCb"> 결과를 micro:bit로 보내기</label>
+        </div>
+        <div class="result hidden" id="ruleResult">
+          <div class="big" id="ruleBig">—</div>
+          <dl class="kv">
+            <dt>센 픽셀</dt><dd id="ruleCounted">—</dd>
+            <dt>보낸 명령</dt><dd id="ruleSent">—</dd>
+            <dt>판단 시간</dt><dd id="ruleMs">—</dd>
+          </dl>
+          <div class="judge" id="ruleJudge"><span>이번 분류는?</span><button class="btn" data-v="O">맞음</button><button class="btn" data-v="X">틀림</button></div>
+        </div>
+      </div>
+
+      <!-- 학습 모델 -->
+      <div class="panel" id="panel-tm">
+        <p class="lead"><b>학습 모델이 두뇌</b> — Teachable Machine으로 직접 학습시킨 모델이 사진을 보고 판단해요. 판단은 이 노트북 브라우저 안에서 이루어져 사진이 밖으로 나가지 않아요.</p>
+        <div class="field">
+          <label for="tmUrl">Teachable Machine 모델 공유 링크</label>
+          <div class="row">
+            <input type="url" id="tmUrl" placeholder="https://teachablemachine.withgoogle.com/models/…/" style="flex:1">
+            <button class="btn primary" id="btnTmLoad">모델 불러오기</button>
+          </div>
+          <span class="hint" id="tmStatus">Teachable Machine에서 '모델 내보내기 → 모델 업로드'를 누르면 나오는 링크를 붙여 넣으세요.</span>
+        </div>
+        <details>
+          <summary>링크가 안 열릴 때: 모델 파일로 불러오기</summary>
+          <p class="hint">Teachable Machine '모델 내보내기 → Tensorflow.js → 다운로드'로 받은 zip을 풀고, model.json · metadata.json · weights.bin 세 파일을 한꺼번에 고르세요.</p>
+          <input type="file" id="tmFiles" multiple accept=".json,.bin">
+        </details>
+
+        <div id="tmBox" class="hidden">
+          <div class="split" style="margin-top:12px">
+            <div>
+              <h3 style="margin-top:0">클래스와 보낼 동작</h3>
+              <p class="hint" style="margin:0">클래스마다 판단했을 때 할 일을 골라요. 이름이 왼쪽·오른쪽·빈 접시(없음)면 자동으로 연결돼요. '이름 그대로 보내기'는 MakeCode에서 클래스별 동작을 직접 코딩할 때 써요(도움말 탭 '클래스 이름 받기' 코드).</p>
+            </div>
+            <div>
+              <canvas id="tmView" class="viewBox" width="224" height="224" style="height:200px" title="모델에 넣는 사진"></canvas>
+              <div class="hint" style="text-align:center">모델이 보는 사진</div>
+            </div>
+          </div>
+          <div class="tmRows" id="tmRows"></div>
+
+          <div class="grid2">
+            <div class="field">
+              <label for="tmThreshold">인식 기준: 확신도가 이보다 낮으면 보내지 않음</label>
+              <div class="row"><input type="range" id="tmThreshold" min="0" max="100" step="5" style="flex:1"><b id="tmThresholdVal" style="min-width:44px;text-align:right">60%</b></div>
+            </div>
+            <div class="field">
+              <label>사진 방향</label>
+              <label class="toggle" title="Teachable Machine은 학습할 때 웹캠 화면을 좌우로 뒤집어 저장해요"><input type="checkbox" id="tmFlip"> 학습 때처럼 좌우 뒤집어 넣기 (Teachable Machine 기본)</label>
+            </div>
+          </div>
+
+          <div class="row wrap">
+            <button class="btn primary big" id="btnTmPredict">판단하고 분류<kbd>Space</kbd></button>
+            <label class="toggle"><input type="checkbox" id="tmAuto"> 자동 분류 (물건을 올리면 알아서)</label>
+            <label class="toggle"><input type="checkbox" class="autoSendCb"> 결과를 micro:bit로 보내기</label>
+          </div>
+
+          <div class="result hidden" id="tmResult">
+            <div class="big" id="tmBig">—</div>
+            <dl class="kv">
+              <dt>보낸 명령</dt><dd id="tmSent">—</dd>
+              <dt>판단 시간</dt><dd id="tmMs">—</dd>
+            </dl>
+            <div class="judge" id="tmJudge"><span>이번 분류는?</span><button class="btn" data-v="O">맞음</button><button class="btn" data-v="X">틀림</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VLM -->
+      <div class="panel" id="panel-vlm">
+        <p class="lead"><b>VLM이 두뇌</b> — 분류 기준을 말로 정하면 VLM이 사진을 보고 LEFT(왼쪽 상자)·RIGHT(오른쪽 상자)·NONE(보류)으로 답해요. 사진은 클라우드의 VLM 서버로 가요.</p>
+        <div class="field">
+          <label for="vlmRule">분류 기준</label>
+          <textarea id="vlmRule" rows="2"></textarea>
+          <div class="presetRow" id="rulePresets"></div>
+        </div>
+        <div class="row wrap">
+          <label class="toggle" title="이유를 먼저 쓰고 답하게 해요. 어려운 판단은 나아지지만 느려져요"><input type="checkbox" id="showReason"> 이유 보이기</label>
+          <label class="toggle"><input type="checkbox" class="autoSendCb"> 답을 micro:bit로 보내기</label>
+        </div>
+        <div class="row wrap" style="margin-top:10px">
+          <button class="btn primary big" id="btnAsk">찍고 묻기<kbd>Space</kbd></button>
+          <button class="btn" id="btnReask" title="방금 보낸 사진을 그대로 다시 물어봐요">같은 사진 다시 묻기</button>
+          <button class="btn" id="btnAsk5" title="같은 사진을 5번 물어 답이 흔들리는지 봐요. 명령은 보내지 않아요">같은 사진 5번 묻기</button>
+        </div>
+
+        <div class="result hidden" id="result">
+          <div class="big" id="rBig">—</div>
+          <div class="reason hidden" id="rReason"></div>
+          <dl class="kv">
+            <dt>AI 원래 답</dt><dd id="rRaw">—</dd>
+            <dt>보낸 명령</dt><dd id="rSent">—</dd>
+            <dt>응답 시간</dt><dd id="rMs">—</dd>
+            <dt>질문 문장</dt><dd id="rPrompt" class="hint" style="white-space:pre-wrap">—</dd>
+          </dl>
+          <div class="judge" id="vlmJudge"><span>이번 분류는?</span><button class="btn" data-v="O">맞음</button><button class="btn" data-v="X">틀림</button></div>
+        </div>
+
+        <div class="result hidden" id="fiveBox">
+          <div class="fiveSum" id="fiveSum">같은 사진 5번 묻기</div>
+          <div class="tablebox" style="max-height:none">
+            <table id="fiveTable"><thead><tr><th>회</th><th>답</th><th>이유</th><th>시간</th></tr></thead><tbody></tbody></table>
+          </div>
+          <p class="hint" style="margin:6px 0 0">5번 묻기는 명령을 보내지 않아요. 각 답은 기록 탭에 '5번 묻기'로 남아요.</p>
+        </div>
+
         <details>
           <summary>질문 문장 바꾸기 (고급)</summary>
-          <p class="hint">{물체} 자리에 '찾을 물체'가 들어가요. 문장을 바꾸면 AI 판단이 어떻게 달라지는지 실험할 수 있어요.</p>
-          <textarea id="prompt"></textarea>
+          <p class="hint">{기준} 자리에 분류 기준이 들어가요. 답 형식 안내(한 단어만 / 이유 먼저)는 '이유 보이기'에 따라 끝에 자동으로 붙어요.</p>
+          <textarea id="vlmPrompt" rows="4"></textarea>
           <div class="row" style="margin-top:6px"><button class="btn" id="btnPromptReset">기본 문장으로</button></div>
         </details>
       </div>
 
+      <!-- 시연 -->
+      <div class="panel" id="panel-demo">
+        <p class="lead"><b>시연으로 배운 정책이 두뇌</b> — 키보드로 접시를 조금씩 기울이는 시연을 녹화해요. 녹화를 그대로 재생하거나, 지금 사진과 가장 비슷한 시연을 찾아 그 움직임을 따라 하게(정책) 할 수 있어요.</p>
+        <div class="demoTop">
+          <div class="gauge">
+            <div class="trayViz"><span class="boxL"></span><span class="boxR"></span><div class="bar" id="trayBar"></div><div class="pivot"></div></div>
+            <b id="demoAngleVal">90°</b>
+            <div class="hint" id="demoAngleTxt">수평</div>
+          </div>
+          <div>
+            <div class="ctlRow">
+              <button class="btn" id="btnTiltL">◀ 왼쪽으로<kbd>←</kbd></button>
+              <button class="btn" id="btnLevel">수평<kbd>↑</kbd></button>
+              <button class="btn" id="btnTiltR">오른쪽으로 ▶<kbd>→</kbd></button>
+            </div>
+            <div class="row wrap" style="margin-top:8px">
+              <label for="demoStep" class="hint">한 번에</label>
+              <select id="demoStep"><option value="2">2°</option><option value="3">3°</option><option value="5">5°</option></select>
+              <span class="hint">키를 누르고 있으면 계속 기울어요</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="row wrap">
+          <input type="text" id="demoName" placeholder="물건 이름 (예: 지우개)" style="width:180px">
+          <button class="btn primary" id="btnRec">● 시연 녹화 시작<kbd>Enter</kbd></button>
+          <span class="recState" id="recState"></span>
+        </div>
+        <p class="hint" style="margin:6px 0 0">녹화를 시작하면 지금 접시 사진(관측)을 찍고, 끝낼 때까지의 기울기 움직임(행동)을 함께 저장해요.</p>
+
+        <h3>1. 녹화해 반복 — 관측 없이 같은 움직임</h3>
+        <div class="row wrap">
+          <button class="btn" id="btnReplay">▶ 마지막 시연 재생</button>
+          <button class="btn" id="btnStopPlay" disabled>■ 멈춤</button>
+        </div>
+
+        <h3>2. 보여 줘서 가르치기 — 관측을 보고 행동 고르기</h3>
+        <div class="row wrap">
+          <button class="btn" id="btnLearn">배우기</button>
+          <button class="btn primary" id="btnPolicy">▶ 정책 실행<kbd>Space</kbd></button>
+          <span class="hint" id="policyState">아직 배우지 않았어요</span>
+        </div>
+
+        <div class="result hidden" id="polResult">
+          <div class="cmpRow">
+            <figure><img id="polNow" alt="지금 사진"><figcaption>지금 사진 (관측)</figcaption></figure>
+            <figure><img id="polRef" alt="참고한 시연"><figcaption id="polRefCap">참고한 시연</figcaption></figure>
+          </div>
+          <dl class="kv">
+            <dt>참고한 시연</dt><dd id="polWho">—</dd>
+            <dt>따라 한 움직임</dt><dd id="polMove">—</dd>
+            <dt>비슷한 순위</dt><dd id="polRank" class="hint">—</dd>
+          </dl>
+          <div class="judge" id="demoJudge"><span>이번 결과는?</span><button class="btn" data-v="O">맞음</button><button class="btn" data-v="X">틀림</button></div>
+        </div>
+
+        <h3>시연 목록 <span id="demoCount"></span></h3>
+        <div class="demoList" id="demoList"></div>
+        <div class="row wrap" style="margin-top:10px">
+          <button class="btn danger" id="btnDemoClear">시연 모두 지우기</button>
+          <span class="hint">각도 명령(A각도)을 받는 MakeCode 코드가 필요해요.</span>
+        </div>
+      </div>
+
       <!-- 기록 -->
       <div class="panel" id="panel-records">
-        <p class="lead">결과마다 맞음·틀림을 표시하면 방식·실험 조건별 성공률이 계산돼요.</p>
+        <p class="lead">결과마다 맞음·틀림을 표시하면 두뇌(방식)·실험 조건별 성공률이 계산돼요.</p>
         <h3>요약</h3>
-        <div class="tablebox" style="max-height:220px">
+        <div class="tablebox" style="max-height:240px">
           <table id="sumTable">
-            <thead><tr><th>방식</th><th>실험 조건</th><th>시도</th><th>판정</th><th>맞음</th><th>성공률</th><th>평균 응답</th></tr></thead>
+            <thead><tr><th>방식</th><th>실험 조건</th><th>시도</th><th>판정</th><th>맞음</th><th>성공률</th><th>평균 판단 시간</th><th>판단하는 곳</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
         <h3>전체 기록 (최근 순)</h3>
         <div class="tablebox">
           <table id="recTable">
-            <thead><tr><th>#</th><th>시각</th><th>방식</th><th>실험 조건</th><th>찾을 물체</th><th>AI 답</th><th>판단</th><th>보낸 명령</th><th>응답</th><th>판정</th></tr></thead>
+            <thead><tr><th>#</th><th>시각</th><th>방식</th><th>실험 조건</th><th>기준·대상</th><th>AI 답</th><th>판단</th><th>보낸 명령</th><th>시간</th><th>판정</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -285,30 +544,47 @@
 
       <!-- 도움말 -->
       <div class="panel" id="panel-help">
-        <h3>연수생 사용 순서</h3>
+        <h3>분류 로봇 준비</h3>
         <ol class="steps">
-          <li>서보를 micro:bit P0에 연결하고, 강사가 나눠 준 hex 파일을 micro:bit에 내려받기</li>
-          <li>Chrome이나 Edge로 이 웹앱 열기</li>
-          <li>'micro:bit 연결' → 목록에서 micro:bit 선택 → 서보가 가운데(90°)로 오는지 확인</li>
-          <li>'카메라 켜기' → 권한 허용, 외장 웹캠이면 목록에서 고르기</li>
-          <li>수동 조종 탭에서 버튼으로 움직여 보고, VLM 판단 탭에서 '찍고 묻기'</li>
-          <li>결과마다 맞음·틀림 표시 → 기록 탭에서 성공률 확인</li>
+          <li>서보를 옆으로 눕혀 고정하고 혼에 접시를 붙이기, 양쪽 아래에 상자 두기. 서보 신호선은 micro:bit P0</li>
+          <li>아래 '명령 받기' 코드를 MakeCode에 넣어 micro:bit에 내려받기 (MakeCode 탭은 내려받은 뒤 닫기)</li>
+          <li>Chrome이나 Edge로 이 웹앱 열기 → 'micro:bit 연결' → 서보가 90°(수평)로 오는지 확인</li>
+          <li>'카메라 켜기' → 외장 웹캠을 목록에서 고르고 접시 위를 내려다보게 두기</li>
+          <li>사람 탭에서 ◀·▶로 물건이 상자로 미끄러지는지, 1.5초 뒤 수평으로 돌아오는지 확인</li>
         </ol>
 
-        <h3>micro:bit 코드</h3>
-        <p class="hint">같은 코드를 hex 파일로도 제공해요: 심화1_웹앱연결_서보.hex (기본), 심화4_안전장치_완성본.hex (안전 장치). hex를 micro:bit 드라이브에 끌어다 놓으면 되고, MakeCode에 끌어다 놓으면 블록으로 열려요. 웹앱은 L·C·R·N 글자 뒤에 줄바꿈을 붙여 보내요.</p>
-        <pre class="code" id="mbCode"></pre>
-        <div class="row"><button class="btn" id="btnCopyCode">코드 복사</button></div>
+        <h3>탭별 두뇌</h3>
+        <ul>
+          <li><b>사람 (1차시)</b>: 화면을 보고 버튼으로 분류. 각도 슬라이더는 4차시 '이상 명령' 실험용</li>
+          <li><b>규칙 (1차시)</b>: 왼쪽·오른쪽 색과 최소 픽셀 수를 정하면 색 픽셀 수로 판단</li>
+          <li><b>학습 모델 (2차시)</b>: Teachable Machine 공유 링크 → 모델 불러오기 → 클래스마다 보낼 동작 고르기</li>
+          <li><b>VLM (3·4차시)</b>: 분류 기준을 말로 쓰고 '찍고 묻기'. 이유 보이기, 같은 사진 5번 묻기</li>
+          <li><b>시연 (5차시)</b>: 시연 녹화 → 재생(관측 없이) → 배우기 → 정책 실행(가장 비슷한 시연을 따라 함)</li>
+        </ul>
+
+        <h3>micro:bit 코드 ① 명령 받기 (모든 탭 공용)</h3>
+        <p class="hint">L(150°)·C(90°)·R(30°)·N(X 표시)과 각도 명령 A0~A180을 받아요. MakeCode 새 프로젝트 → JavaScript 탭에 붙여 넣고 블록 탭으로 돌아가면 블록으로 바뀌어요.</p>
+        <pre class="code" id="mbCode1"></pre>
+        <div class="row wrap"><button class="btn" id="btnCopyCode1">코드 복사</button><a class="btn" href="https://makecode.microbit.org/#editor" target="_blank" rel="noopener">MakeCode 열기</a></div>
+
+        <h3>micro:bit 코드 ② 클래스 이름 받기 (학습 모델 '이름 그대로 보내기'용)</h3>
+        <p class="hint">웹앱이 Teachable Machine 클래스 이름을 그대로 보내면, 이름마다 무엇을 할지 MakeCode에서 직접 정해요. 따옴표 안 글자를 클래스 이름과 똑같이(띄어쓰기 포함) 바꾸세요. 한글 이름이 맞지 않으면 클래스 이름을 영어로 바꿔 보세요.</p>
+        <pre class="code" id="mbCode2"></pre>
+        <div class="row"><button class="btn" id="btnCopyCode2">코드 복사</button></div>
 
         <h3>문제 해결</h3>
         <ul>
           <li><b>micro:bit가 목록에 안 보임</b>: 충전 전용이 아닌 데이터 케이블인지 확인, 케이블을 다시 꽂기</li>
-          <li><b>포트를 열 수 없음</b>: MakeCode 탭이 micro:bit에 연결돼 있으면 그 탭을 닫거나 연결을 끊고 다시 시도</li>
-          <li><b>서보가 반대로 돌아감</b>: 좌우 반전을 켜거나, micro:bit 코드에서 L·R 각도를 바꾸기</li>
+          <li><b>포트를 열 수 없음</b>: MakeCode 탭이 micro:bit에 연결돼 있으면 그 탭을 닫고 다시 시도</li>
+          <li><b>접시가 반대쪽으로 기울어짐</b>: 서보를 반대로 눕히거나 MakeCode 코드에서 L·R 각도를 서로 바꾸기</li>
+          <li><b>각도 슬라이더·시연에서 안 움직임</b>: micro:bit에 ① 명령 받기 코드(각도 명령 포함)가 들어 있는지 확인</li>
+          <li><b>학습 모델이 왼쪽·오른쪽을 반대로 판단</b>: '학습 때처럼 좌우 뒤집어 넣기'를 바꿔 보기</li>
+          <li><b>모델을 불러오지 못함</b>: '모델 업로드'를 눌렀는지, 링크 전체를 복사했는지 확인. 학교망에서 막히면 '모델 파일로 불러오기'</li>
+          <li><b>이유 보이기에서 이유가 중간에 잘림</b>: 중계 서버가 예전 버전(답 20토큰 제한)일 수 있음 → 강사에게 문의</li>
           <li><b>서보가 떨리거나 micro:bit가 다시 켜짐</b>: 3V 직결 대신 서보 확장보드 전원 사용</li>
-          <li><b>카메라가 안 켜짐</b>: 주소창 왼쪽 자물쇠 → 카메라 허용, 다른 프로그램이 카메라를 쓰는지 확인</li>
+          <li><b>카메라가 안 켜짐</b>: 주소창 왼쪽 자물쇠 → 카메라 허용, Teachable Machine 탭 등 다른 곳에서 카메라를 쓰는지 확인</li>
         </ul>
-        <div class="note">VLM 판단 모드에서는 찍은 사진이 VLM 서버로 전송돼요. 얼굴·이름표가 찍히지 않게 물체만 화면에 두세요.</div>
+        <div class="note">VLM 탭에서는 찍은 사진이 VLM 서버로 전송돼요. 얼굴·이름표가 찍히지 않게 접시만 화면에 두세요. 다른 탭은 사진이 이 노트북 밖으로 나가지 않아요.</div>
       </div>
     </section>
   </div>
@@ -322,32 +598,75 @@
 
   // ---------- 기본값 ----------
   const DEFAULT_MODEL = "claude-haiku-5-5";
-  const DEFAULT_PROMPT = "사진에서 {물체}이(가) 어디에 있어? LEFT, CENTER, RIGHT, NONE 중 한 단어만 답해.";
+  const DEFAULT_VLM_PROMPT =
+    "사진은 분류 로봇의 접시를 위에서 내려다본 모습이야.\n" +
+    "분류 기준: {기준}\n" +
+    "접시 위 물건을 이 기준으로 판단해. 왼쪽 상자에 넣을 것이면 LEFT, 오른쪽 상자에 넣을 것이면 RIGHT, 접시가 비었거나 기준으로 판단하기 어려우면 NONE.";
+  const FORMAT_SHORT = "답은 LEFT, RIGHT, NONE 중 한 단어만 써.";
+  const FORMAT_REASON = "먼저 '이유:' 뒤에 판단 이유를 한두 문장으로 쓰고, 마지막 줄에 '답: LEFT', '답: RIGHT', '답: NONE' 중 하나만 써.";
+  const RULE_PRESETS = [
+    ["학용품 / 간식", "학용품은 왼쪽, 간식은 오른쪽"],
+    ["물에 젖으면 안 되는 것", "물에 젖으면 안 되는 것은 왼쪽, 젖어도 괜찮은 것은 오른쪽"],
+    ["시간표 보고 판단", "사진 속 시간표를 보고, 오늘 수업에 필요한 것은 왼쪽, 필요 없는 것은 오른쪽"],
+    ["빨강 / 파랑", "빨간 것은 왼쪽, 파란 것은 오른쪽"]
+  ];
+  const COLOR_PRESETS = [["빨강", "#e53935"], ["주황", "#fb8c00"], ["노랑", "#fdd835"], ["초록", "#43a047"], ["파랑", "#1e63d6"], ["보라", "#8e24aa"]];
   const DEFAULTS = {
     mode: "proxy", proxyUrl: "", classCode: "", model: DEFAULT_MODEL,
     imgSize: 768, minInterval: 2, maxCalls: 100,
-    prompt: DEFAULT_PROMPT, mirror: false, autoSend: true, recManual: true,
-    target: "빨간 컵", condition: ""
+    mirror: false, autoSend: true, recManual: true, condition: "",
+    autoReturn: true, returnDelay: 1.5,
+    ruleLeft: "#e53935", ruleRight: "#1e63d6", ruleTol: 20, ruleMin: 300,
+    tmUrl: "", tmThreshold: 60, tmFlip: true, tmMaps: {},
+    vlmRule: RULE_PRESETS[0][1], showReason: false, vlmPrompt: DEFAULT_VLM_PROMPT,
+    demoStep: 3
   };
-  const CMD = { LEFT: "L", CENTER: "C", RIGHT: "R", NONE: "N" };
-  const KO = { LEFT: "왼쪽", CENTER: "가운데", RIGHT: "오른쪽", NONE: "없음" };
-  const CMD_KO = { L: "왼쪽", C: "가운데", R: "오른쪽", N: "없음" };
-  const MICROBIT_CODE =
-`serial.onDataReceived(serial.delimiters(Delimiters.NewLine), function () {
-    let cmd = serial.readUntil(serial.delimiters(Delimiters.NewLine))
-    if (cmd == "L") {
+  const DEC_CMD = { LEFT: "L", RIGHT: "R", NONE: "N" };
+  const DEC_KO = { LEFT: "왼쪽 상자", RIGHT: "오른쪽 상자", NONE: "보류" };
+  const CMD_KO = { L: "왼쪽 상자", C: "수평", R: "오른쪽 상자", N: "보류" };
+  const WHERE = { "사람": "사람", "규칙": "내 노트북", "학습 모델": "내 노트북", "VLM": "클라우드", "재생": "micro:bit·웹앱", "정책": "내 노트북" };
+
+  const MB_CODE_CMD =
+`// 명령 받기: L 왼쪽 상자, C 수평, R 오른쪽 상자, N 보류, A각도(예: A120)
+let 명령 = ""
+serial.onDataReceived(serial.delimiters(Delimiters.NewLine), function () {
+    명령 = serial.readUntil(serial.delimiters(Delimiters.NewLine))
+    if (명령 == "L") {
         pins.servoWritePin(AnalogPin.P0, 150)
         basic.showArrow(ArrowNames.West)
-    } else if (cmd == "C") {
+    } else if (명령 == "C") {
         pins.servoWritePin(AnalogPin.P0, 90)
-        basic.showArrow(ArrowNames.North)
-    } else if (cmd == "R") {
+        basic.showIcon(IconNames.SmallDiamond)
+    } else if (명령 == "R") {
         pins.servoWritePin(AnalogPin.P0, 30)
         basic.showArrow(ArrowNames.East)
-    } else if (cmd == "N") {
+    } else if (명령 == "N") {
+        basic.showIcon(IconNames.No)
+    } else if (명령.charAt(0) == "A") {
+        pins.servoWritePin(AnalogPin.P0, parseFloat(명령.substr(1, 3)))
+    }
+    serial.writeLine("OK " + 명령)
+})
+pins.servoWritePin(AnalogPin.P0, 90)
+basic.showIcon(IconNames.Yes)`;
+
+  const MB_CODE_NAME =
+`// 클래스 이름 받기: 따옴표 안 글자를 Teachable Machine 클래스 이름과 똑같이 바꾸기
+let 받은이름 = ""
+serial.onDataReceived(serial.delimiters(Delimiters.NewLine), function () {
+    받은이름 = serial.readUntil(serial.delimiters(Delimiters.NewLine))
+    if (받은이름 == "학용품") {
+        pins.servoWritePin(AnalogPin.P0, 150)
+        basic.pause(1500)
+        pins.servoWritePin(AnalogPin.P0, 90)
+    } else if (받은이름 == "간식") {
+        pins.servoWritePin(AnalogPin.P0, 30)
+        basic.pause(1500)
+        pins.servoWritePin(AnalogPin.P0, 90)
+    } else {
         basic.showIcon(IconNames.No)
     }
-    serial.writeLine("OK " + cmd)
+    serial.writeLine("OK " + 받은이름)
 })
 pins.servoWritePin(AnalogPin.P0, 90)
 basic.showIcon(IconNames.Yes)`;
@@ -355,7 +674,7 @@ basic.showIcon(IconNames.Yes)`;
   // ---------- 저장소 (실패해도 동작) ----------
   const store = {
     get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
-    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
     del(k) { try { localStorage.removeItem(k); } catch (e) {} },
     sget(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
     sset(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} },
@@ -366,6 +685,8 @@ basic.showIcon(IconNames.Yes)`;
   const $$ = (s) => Array.from(document.querySelectorAll(s));
   const hms = () => { const d = new Date(); return [d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, "0")).join(":"); };
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   let settings = Object.assign({}, DEFAULTS, store.get("pai.settings", {}));
   let memKey = "";
@@ -406,9 +727,8 @@ basic.showIcon(IconNames.Yes)`;
   function mbLog(text, cls) {
     const box = $("#mbLog");
     const line = document.createElement("div");
-    const time = hms();
     line.className = cls || "sys";
-    line.textContent = time + "  " + text;
+    line.textContent = hms() + "  " + text;
     box.appendChild(line);
     while (box.childNodes.length > 300) box.removeChild(box.firstChild);
     box.scrollTop = box.scrollHeight;
@@ -494,16 +814,37 @@ basic.showIcon(IconNames.Yes)`;
     });
   }
 
-  async function sendCmd(cmd) {
-    if (!writer) { toast("먼저 'micro:bit 연결'을 누르세요", "warn"); return false; }
-    try {
-      await writer.write(new TextEncoder().encode(cmd + "\n"));
-      mbLog("→ " + cmd, "out");
-      return true;
-    } catch (e) {
-      toast("보내기 실패: " + e.message, "bad");
-      return false;
+  // 보낼 글자 끝에 줄바꿈을 붙여 전송. quiet면 미연결이어도 알림을 띄우지 않음
+  let sendChain = Promise.resolve();
+  function sendCmd(cmd, opt) {
+    opt = opt || {};
+    if (!writer) { if (!opt.quiet) toast("먼저 'micro:bit 연결'을 누르세요", "warn"); return Promise.resolve(false); }
+    const text = String(cmd).replace(/[\r\n]+/g, " ").trim();
+    const job = sendChain.then(async () => {
+      if (!writer) return false;
+      try {
+        await writer.write(new TextEncoder().encode(text + "\n"));
+        mbLog("→ " + text + (opt.note ? "  (" + opt.note + ")" : ""), "out");
+        return true;
+      } catch (e) {
+        if (!opt.quiet) toast("보내기 실패: " + e.message, "bad");
+        return false;
+      }
+    });
+    sendChain = job.catch(() => false);
+    return job;
+  }
+
+  // 분류 명령: L·R을 보내면 정해진 시간 뒤 C를 보내 수평으로 되돌림
+  let returnTimer = null;
+  async function act(cmd) {
+    clearTimeout(returnTimer); returnTimer = null;
+    const ok = await sendCmd(cmd);
+    if (ok && (cmd === "L" || cmd === "R") && settings.autoReturn) {
+      returnTimer = setTimeout(() => { returnTimer = null; sendCmd("C", { quiet: true, note: "자동 복귀" }); },
+        Number(settings.returnDelay) * 1000);
     }
+    return ok;
   }
 
   // ---------- 카메라 ----------
@@ -530,14 +871,15 @@ basic.showIcon(IconNames.Yes)`;
       return;
     }
     if (stream) stream.getTracks().forEach((t) => t.stop());
-    const video_c = { width: { ideal: 1280 }, height: { ideal: 720 } };
-    if (deviceId) video_c.deviceId = { exact: deviceId };
+    // 4:3으로 요청: 학습 모델은 가운데 정사각형만 보므로 16:9보다 좌우 시야가 덜 잘림
+    const vc = { width: { ideal: 1280 }, height: { ideal: 960 }, aspectRatio: { ideal: 4 / 3 } };
+    if (deviceId) vc.deviceId = { exact: deviceId };
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: video_c, audio: false });
+      stream = await navigator.mediaDevices.getUserMedia({ video: vc, audio: false });
     } catch (e) {
       stream = null;
       setCamUI(false);
-      toast("카메라를 켤 수 없어요. 권한 허용과 다른 프로그램 사용 여부를 확인하세요.", "bad");
+      toast("카메라를 켤 수 없어요. 권한 허용과 다른 프로그램(Teachable Machine 탭 등) 사용 여부를 확인하세요.", "bad");
       return;
     }
     video.srcObject = stream;
@@ -546,6 +888,7 @@ basic.showIcon(IconNames.Yes)`;
     applyMirror();
     const cur = stream.getVideoTracks()[0]?.getSettings()?.deviceId;
     await listCameras(cur);
+    if (activeTab === "rule") ruleLoopStart();
   }
 
   async function listCameras(currentId) {
@@ -561,8 +904,10 @@ basic.showIcon(IconNames.Yes)`;
     video.style.transform = settings.mirror ? "scaleX(-1)" : "none";
   }
 
+  const camOn = () => !!(stream && video.videoWidth);
+
   function capture() {
-    if (!stream || !video.videoWidth) { toast("먼저 '카메라 켜기'를 누르세요", "warn"); return null; }
+    if (!camOn()) { toast("먼저 '카메라 켜기'를 누르세요", "warn"); return null; }
     const vw = video.videoWidth, vh = video.videoHeight;
     const s = Math.min(1, Number(settings.imgSize) / Math.max(vw, vh));
     const w = Math.round(vw * s), h = Math.round(vh * s);
@@ -582,6 +927,168 @@ basic.showIcon(IconNames.Yes)`;
     $("#noShot").classList.add("hidden");
   }
 
+  // ---------- 결과 판정 버튼 (탭마다 하나) ----------
+  const lastRec = { manual: null, rule: null, tm: null, vlm: null, demo: null };
+  function bindJudge(boxSel, key) {
+    $$(boxSel + " .btn").forEach((b) => b.addEventListener("click", () => {
+      if (lastRec[key] == null) { toast("판정할 결과가 아직 없어요", "warn"); return; }
+      setVerdict(lastRec[key], b.dataset.v);
+      markJudge(boxSel, b.dataset.v);
+    }));
+  }
+  function markJudge(boxSel, v) {
+    $$(boxSel + " .btn").forEach((x) => x.classList.toggle("sel-" + x.dataset.v, x.dataset.v === v));
+  }
+
+  // ---------- 사람 ----------
+  async function manualSend(cmd, btn) {
+    if (btn) { btn.classList.add("flash"); setTimeout(() => btn.classList.remove("flash"), 200); }
+    const ok = await act(cmd);
+    if (ok && settings.recManual && cmd !== "C") {
+      lastRec.manual = addRecord({ mode: "사람", target: "", answer: "", decision: CMD_KO[cmd] || cmd, sent: cmd, latency: "" });
+      markJudge("#manJudge", "");
+    }
+  }
+
+  // ---------- 규칙 ----------
+  function hexToRgb(h) { const n = parseInt(String(h).replace("#", ""), 16) || 0; return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+  function rgbToHsv(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    let h = 0;
+    if (d) {
+      if (mx === r) h = ((g - b) / d) % 6; else if (mx === g) h = (b - r) / d + 2; else h = (r - g) / d + 4;
+      h *= 60; if (h < 0) h += 360;
+    }
+    return [h, mx ? d / mx : 0, mx];
+  }
+  const hueDist = (a, b) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
+  const colorName = (hex) => (COLOR_PRESETS.find((c) => c[1].toLowerCase() === String(hex).toLowerCase()) || ["고른 색"])[0];
+
+  function renderSwatches() {
+    ["Left", "Right"].forEach((side) => {
+      const cur = settings["rule" + side];
+      const box = $("#sw" + side);
+      box.innerHTML = COLOR_PRESETS.map(([n, c]) =>
+        `<button class="sw${c.toLowerCase() === cur.toLowerCase() ? " sel" : ""}" data-side="${side}" data-c="${c}" title="${n}" style="background:${c}"></button>`
+      ).join("") + `<input type="color" data-side="${side}" value="${cur}" title="다른 색 고르기">`;
+    });
+    $("#ruleSwL").style.background = settings.ruleLeft;
+    $("#ruleSwR").style.background = settings.ruleRight;
+    $("#ruleNameL").textContent = colorName(settings.ruleLeft) + " (왼쪽)";
+    $("#ruleNameR").textContent = colorName(settings.ruleRight) + " (오른쪽)";
+    $("#ruleMinVal").textContent = settings.ruleMin + "픽셀";
+    $("#ruleTolVal").textContent = "±" + settings.ruleTol + "°";
+  }
+
+  function setRuleColor(side, c) {
+    settings["rule" + side] = c;
+    const other = side === "Left" ? settings.ruleRight : settings.ruleLeft;
+    if (hueDist(rgbToHsv(...hexToRgb(c))[0], rgbToHsv(...hexToRgb(other))[0]) < settings.ruleTol) {
+      toast("왼쪽 색과 오른쪽 색이 너무 비슷해요", "warn");
+    }
+    saveSettings(true); renderSwatches();
+  }
+
+  // 160x120으로 줄인 화면에서 두 색 픽셀을 셈 (draw면 센 픽셀을 그 색으로 칠해 보여 줌)
+  function ruleEvaluate(draw) {
+    if (!camOn()) return null;
+    const t0 = performance.now();
+    const cv = $("#ruleView"), W = cv.width, H = cv.height;
+    const ctx = cv.getContext("2d", { willReadFrequently: true });
+    ctx.save();
+    if (settings.mirror) { ctx.translate(W, 0); ctx.scale(-1, 1); }
+    ctx.drawImage(video, 0, 0, W, H);
+    ctx.restore();
+    const img = ctx.getImageData(0, 0, W, H), d = img.data;
+    const cl = hexToRgb(settings.ruleLeft), cr = hexToRgb(settings.ruleRight);
+    const hl = rgbToHsv(...cl)[0], hr = rgbToHsv(...cr)[0], tol = Number(settings.ruleTol);
+    let nl = 0, nr = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i + 1], b = d[i + 2];
+      const [h, s, v] = rgbToHsv(r, g, b);
+      let m = 0;
+      if (s >= 0.35 && v >= 0.2) {
+        const dl = hueDist(h, hl), dr = hueDist(h, hr);
+        if (dl <= tol && dl <= dr) m = 1; else if (dr <= tol) m = 2;
+      }
+      if (m === 1) { nl++; if (draw) { d[i] = cl[0]; d[i + 1] = cl[1]; d[i + 2] = cl[2]; } }
+      else if (m === 2) { nr++; if (draw) { d[i] = cr[0]; d[i + 1] = cr[1]; d[i + 2] = cr[2]; } }
+      else if (draw) { const y = 30 + 0.3 * (0.3 * r + 0.59 * g + 0.11 * b); d[i] = d[i + 1] = d[i + 2] = y; }
+    }
+    if (draw) ctx.putImageData(img, 0, 0);
+    const min = Number(settings.ruleMin);
+    let dec = "NONE";
+    if (nl >= min && nl >= nr) dec = "LEFT"; else if (nr >= min) dec = "RIGHT";
+    return { nl, nr, dec, cmd: DEC_CMD[dec], ms: Math.round(performance.now() - t0) };
+  }
+
+  function showRuleLive(ev) {
+    $("#ruleCntL").textContent = ev ? ev.nl : "—";
+    $("#ruleCntR").textContent = ev ? ev.nr : "—";
+    $("#ruleNow").textContent = ev ? DEC_KO[ev.dec] : "카메라 꺼짐";
+  }
+
+  async function ruleCommit(ev, auto) {
+    let sent = "", sentText;
+    if (!settings.autoSend) sentText = "보내지 않음 (보내기 꺼짐)";
+    else if (!writer) { sentText = "보내지 못함 (micro:bit 연결 확인)"; if (!auto) toast("먼저 'micro:bit 연결'을 누르세요", "warn"); }
+    else if (await act(ev.cmd)) { sent = ev.cmd; sentText = ev.cmd + " (" + CMD_KO[ev.cmd] + ")"; }
+    else sentText = "보내지 못함";
+    const nL = colorName(settings.ruleLeft), nR = colorName(settings.ruleRight);
+    $("#ruleResult").classList.remove("hidden");
+    $("#ruleBig").textContent = DEC_KO[ev.dec] + (auto ? " · 자동" : "");
+    $("#ruleCounted").textContent = `${nL} ${ev.nl} · ${nR} ${ev.nr} (최소 ${settings.ruleMin})`;
+    $("#ruleSent").textContent = sentText;
+    $("#ruleMs").textContent = (ev.ms / 1000).toFixed(3) + "초";
+    markJudge("#ruleJudge", "");
+    showLastShot($("#ruleView").toDataURL("image/png"));
+    lastRec.rule = addRecord({
+      mode: "규칙", auto, target: `${nL}→왼쪽 · ${nR}→오른쪽`,
+      answer: `${nL} ${ev.nl} · ${nR} ${ev.nr}`, decision: DEC_KO[ev.dec], sent, latency: ev.ms
+    });
+  }
+
+  function ruleOnce() {
+    const ev = ruleEvaluate(true);
+    if (!ev) { toast("먼저 '카메라 켜기'를 누르세요", "warn"); return; }
+    showRuleLive(ev);
+    ruleCommit(ev, false);
+  }
+
+  let ruleGen = 0;
+  function ruleLoopStart() {
+    const g = ++ruleGen;
+    const tick = async () => {
+      if (g !== ruleGen || activeTab !== "rule") return;
+      const ev = ruleEvaluate(true);
+      showRuleLive(ev);
+      if ($("#ruleAuto").checked) {
+        if (!ev) { $("#ruleAuto").checked = false; toast("카메라가 꺼져서 자동 분류를 멈췄어요", "warn"); }
+        else await sorterFeed(ev.cmd, () => ruleCommit(ev, true));
+      }
+      if (g === ruleGen) setTimeout(tick, 200);
+    };
+    tick();
+  }
+  function ruleLoopStop() { ruleGen++; $("#ruleAuto").checked = false; }
+
+  // ---------- 자동 분류 (규칙·학습 모델 공용) ----------
+  // 같은 판단이 3번 연속 나오면 한 번 분류하고, 복귀가 끝날 때까지 쉼
+  const sorter = { last: "", streak: 0, coolUntil: 0 };
+  function sorterReset() { sorter.last = ""; sorter.streak = 0; sorter.coolUntil = 0; }
+  async function sorterFeed(key, commit) {
+    if (!key || key === "N" || key === "C") { sorter.last = ""; sorter.streak = 0; return; }
+    if (key === sorter.last) sorter.streak++; else { sorter.last = key; sorter.streak = 1; }
+    if (sorter.streak >= 3 && Date.now() >= sorter.coolUntil) {
+      sorter.streak = 0;
+      sorter.coolUntil = Infinity;
+      try { await commit(); } finally {
+        sorter.coolUntil = Date.now() + (settings.autoReturn ? Number(settings.returnDelay) * 1000 : 0) + 1500;
+      }
+    }
+  }
+
   // ---------- VLM ----------
   function getApiKey() {
     return memKey || store.sget("pai.apikey") || store.get("pai.apikey", "");
@@ -592,23 +1099,25 @@ basic.showIcon(IconNames.Yes)`;
     return !!getApiKey();
   }
 
-  function buildPrompt(target) {
-    const tpl = (settings.prompt || DEFAULT_PROMPT);
-    return tpl.split("{물체}").join(target);
+  function buildPrompt(rule, withReason) {
+    const tpl = settings.vlmPrompt || DEFAULT_VLM_PROMPT;
+    const body = tpl.includes("{기준}") ? tpl.split("{기준}").join(rule) : tpl + "\n분류 기준: " + rule;
+    return body + "\n" + (withReason ? FORMAT_REASON : FORMAT_SHORT);
   }
 
-  async function askVLM(b64, prompt) {
+  async function askVLM(b64, prompt, maxTokens) {
+    maxTokens = maxTokens || 20;
     if (settings.mode === "proxy") {
       if (!settings.proxyUrl) throw new Error("설정 탭에서 중계 서버 주소를 넣어 주세요");
       const r = await fetch(settings.proxyUrl, {
         method: "POST",
         headers: { "content-type": "application/json", "x-class-code": settings.classCode || "" },
-        body: JSON.stringify({ image: b64, prompt })
+        body: JSON.stringify({ image: b64, prompt, maxTokens })
       });
       let data = {};
       try { data = await r.json(); } catch (e) {}
       if (!r.ok) throw new Error(data.error || ("중계 서버 오류 " + r.status));
-      return String(data.text || "");
+      return { text: String(data.text || ""), stop: data.stop || "" };
     }
     const key = getApiKey();
     if (!key) throw new Error("설정 탭에서 API 키를 넣어 주세요");
@@ -622,8 +1131,8 @@ basic.showIcon(IconNames.Yes)`;
       },
       body: JSON.stringify({
         model: settings.model || DEFAULT_MODEL,
-        max_tokens: 20,
-        thinking: { type: "disabled" }, // Haiku 5.5는 기본으로 생각부터 해서 20토큰을 다 씀 → 생각 끄기
+        max_tokens: maxTokens,
+        thinking: { type: "disabled" }, // Haiku 5.5는 기본으로 생각부터 해서 짧은 답 제한을 다 씀 → 생각 끄기
         output_config: { effort: "low" },
         messages: [{
           role: "user",
@@ -643,38 +1152,69 @@ basic.showIcon(IconNames.Yes)`;
         ? "VLM이 이 요청에는 답하지 않았어요"
         : "VLM 답이 비어 있어요 (stop_reason: " + (data.stop_reason || "알 수 없음") + ")");
     }
-    return text;
+    return { text, stop: data.stop_reason || "" };
   }
 
-  // 답에서 LEFT/CENTER/RIGHT/NONE 중 정확히 하나를 찾음. 둘 이상이거나 없으면 판단 불가(null).
+  // 답 해석: '답:' 줄이 있으면 그 단어, 없으면 LEFT·RIGHT·NONE이 정확히 하나일 때만 인정
+  const WORD = { LEFT: "LEFT", RIGHT: "RIGHT", NONE: "NONE", CENTER: "NONE",
+                 "왼쪽": "LEFT", "오른쪽": "RIGHT", "없음": "NONE", "보류": "NONE", "모르겠음": "NONE", "가운데": "NONE" };
   function parseAnswer(text) {
-    const up = String(text || "").toUpperCase();
-    const words = ["LEFT", "CENTER", "RIGHT", "NONE"];
-    let hits = words.filter((w) => new RegExp("(^|[^A-Z])" + w + "([^A-Z]|$)").test(up));
-    if (hits.length === 0) {
-      const ko = { "왼쪽": "LEFT", "가운데": "CENTER", "오른쪽": "RIGHT", "없": "NONE" };
-      hits = Object.keys(ko).filter((k) => up.includes(k)).map((k) => ko[k]);
+    const raw = String(text || "");
+    let dec = null, reason = "";
+    const re = /답\s*[:：]\s*\**\s*([A-Za-z]+|왼쪽|오른쪽|없음|보류|모르겠음|가운데)/g;
+    let m, last = null;
+    while ((m = re.exec(raw))) last = m;
+    if (last) {
+      dec = WORD[last[1].toUpperCase()] || WORD[last[1]] || null;
+      reason = raw.slice(0, last.index);
+    } else {
+      const up = raw.toUpperCase();
+      const hits = new Set(["LEFT", "RIGHT", "NONE", "CENTER"].filter((w) => new RegExp("(^|[^A-Z])" + w + "([^A-Z]|$)").test(up)).map((w) => WORD[w]));
+      if (hits.size === 0) ["왼쪽", "오른쪽", "모르겠음", "없음"].forEach((k) => { if (raw.includes(k)) hits.add(WORD[k]); });
+      if (hits.size === 1) dec = Array.from(hits)[0];
+      reason = raw;
     }
-    return hits.length === 1 ? hits[0] : null;
+    reason = reason.replace(/^\s*이유\s*[:：]\s*/m, "").trim();
+    return { dec, reason };
   }
 
-  let busy = false, lastCallAt = 0, lastShot = null, lastRecId = null;
+  let busy = false, lastCallAt = 0, lastShot = null;
 
-  function setAskUI(on) {
-    const b = $("#btnAsk");
-    b.disabled = on;
-    $("#btnReask").disabled = on;
-    b.innerHTML = on ? '<span class="spinner"></span>묻는 중…' : '찍고 묻기<kbd>Space</kbd>';
+  function setAskUI(on, label) {
+    $("#btnAsk").disabled = on; $("#btnReask").disabled = on; $("#btnAsk5").disabled = on;
+    $("#btnAsk").innerHTML = on && !label ? '<span class="spinner"></span>묻는 중…' : '찍고 묻기<kbd>Space</kbd>';
+    $("#btnAsk5").innerHTML = on && label ? '<span class="spinner"></span>' + label : "같은 사진 5번 묻기";
+  }
+
+  function vlmPreflight(n) {
+    if (busy) return false;
+    if (!vlmReady()) { toast("VLM 연결이 설정되지 않았어요. 강사에게 문의하세요.", "warn"); return false; }
+    const waitMs = Number(settings.minInterval) * 1000 - (Date.now() - lastCallAt);
+    if (waitMs > 0) { toast(Math.ceil(waitMs / 1000) + "초 뒤에 다시 물어볼 수 있어요", "warn"); return false; }
+    if (calls + (n || 1) > Number(settings.maxCalls)) { toast("이 컴퓨터의 최대 호출 수를 넘어요. 강사에게 문의하세요.", "bad"); return false; }
+    if (!$("#vlmRule").value.trim()) { toast("분류 기준을 입력하세요", "warn"); return false; }
+    return true;
+  }
+
+  function errMsg(e) {
+    return e && e.message === "Failed to fetch" ? "서버에 닿지 못했어요 (인터넷·주소 확인)" : (e && e.message) || "알 수 없는 오류";
+  }
+
+  async function callOnce(shot, prompt, withReason) {
+    calls += 1; store.set("pai.calls", calls); renderCalls();
+    const t0 = performance.now();
+    try {
+      const out = await askVLM(shot.b64, prompt, withReason ? 300 : 20);
+      const res = Object.assign({ ms: Math.round(performance.now() - t0) }, out, parseAnswer(out.text));
+      if (!withReason) res.reason = "";
+      return res;
+    } catch (e) {
+      return { ms: Math.round(performance.now() - t0), error: errMsg(e) };
+    }
   }
 
   async function doAsk(reuse) {
-    if (busy) return;
-    if (!vlmReady()) { toast("VLM 연결이 설정되지 않았어요. 강사에게 문의하세요.", "warn"); return; }
-    const waitMs = Number(settings.minInterval) * 1000 - (Date.now() - lastCallAt);
-    if (waitMs > 0) { toast(Math.ceil(waitMs / 1000) + "초 뒤에 다시 물어볼 수 있어요", "warn"); return; }
-    if (calls >= Number(settings.maxCalls)) { toast("이 컴퓨터의 최대 호출 수에 도달했어요. 강사에게 문의하세요.", "bad"); return; }
-    const target = $("#target").value.trim();
-    if (!target) { toast("찾을 물체를 입력하세요", "warn"); return; }
+    if (!vlmPreflight(1)) return;
     let shot;
     if (reuse) {
       if (!lastShot) { toast("아직 찍은 사진이 없어요", "warn"); return; }
@@ -685,49 +1225,554 @@ basic.showIcon(IconNames.Yes)`;
     }
     lastShot = shot;
     showLastShot(shot.dataUrl);
-    const prompt = buildPrompt(target);
+    const rule = $("#vlmRule").value.trim();
+    const withReason = settings.showReason;
+    const prompt = buildPrompt(rule, withReason);
 
     busy = true; setAskUI(true);
     lastCallAt = Date.now();
-    calls += 1; store.set("pai.calls", calls); renderCalls();
-    const t0 = performance.now();
-    let text = "", err = null;
-    try { text = await askVLM(shot.b64, prompt); } catch (e) { err = e; }
-    const ms = Math.round(performance.now() - t0);
+    const r = await callOnce(shot, prompt, withReason);
     busy = false; setAskUI(false);
+    lastCallAt = Date.now();
 
-    if (err) {
-      const msg = err.message === "Failed to fetch" ? "서버에 닿지 못했어요 (인터넷·주소 확인)" : err.message;
-      showResult({ error: msg, ms, prompt });
-      lastRecId = addRecord({ mode: "VLM", target, answer: "(오류) " + msg, decision: "", sent: "", latency: ms, reuse });
+    if (r.error) {
+      showVlmResult({ error: r.error, ms: r.ms, prompt });
+      lastRec.vlm = addRecord({ mode: "VLM", target: rule, answer: "(오류) " + r.error, decision: "", sent: "", latency: r.ms, reuse });
       return;
     }
-    const dec = parseAnswer(text);
-    let sent = "";
-    if (dec && $("#autoSend").checked) {
-      if (await sendCmd(CMD[dec])) sent = CMD[dec];
-    }
-    showResult({ text, dec, sent, ms, prompt, reuse });
-    lastRecId = addRecord({ mode: "VLM", target, answer: text.trim(), decision: dec ? dec : "판단 불가", sent, latency: ms, reuse });
+    let sent = "", sentText;
+    if (!r.dec) sentText = "보내지 않음 (답이 하나로 정해지지 않음)";
+    else if (!settings.autoSend) sentText = "보내지 않음 (보내기 꺼짐)";
+    else if (await act(DEC_CMD[r.dec])) { sent = DEC_CMD[r.dec]; sentText = sent + " (" + CMD_KO[sent] + ")"; }
+    else sentText = "보내지 못함 (micro:bit 연결 확인)";
+    const cut = withReason && (r.stop === "max_tokens" || !/답\s*[:：]/.test(r.text));
+    showVlmResult({ r, sentText, ms: r.ms, prompt, reuse, withReason, cut });
+    lastRec.vlm = addRecord({ mode: "VLM", target: rule, answer: r.text.trim(), decision: r.dec ? DEC_KO[r.dec] : "판단 불가", sent, latency: r.ms, reuse, reason: withReason });
   }
 
-  function showResult(r) {
+  function showVlmResult(o) {
     const box = $("#result");
     box.classList.remove("hidden");
-    box.classList.toggle("err", !!r.error);
-    $$("#judgeBox .btn").forEach((b) => b.classList.remove("sel-O", "sel-X"));
-    if (r.error) {
+    box.classList.toggle("err", !!o.error);
+    markJudge("#vlmJudge", "");
+    const rs = $("#rReason");
+    if (o.error) {
       $("#rBig").textContent = "오류";
-      $("#rRaw").textContent = r.error;
+      rs.classList.add("hidden");
+      $("#rRaw").textContent = o.error;
       $("#rSent").textContent = "보내지 않음";
     } else {
-      $("#rBig").textContent = r.dec ? `${r.dec} · ${KO[r.dec]}` : "판단 불가";
-      $("#rRaw").textContent = r.text.trim() || "(빈 답)";
-      $("#rSent").textContent = r.sent ? `${r.sent} (${CMD_KO[r.sent]})` :
-        (!r.dec ? "보내지 않음 (답이 하나로 정해지지 않음)" : ($("#autoSend").checked ? "보내지 못함 (micro:bit 연결 확인)" : "보내지 않음 (보내기 꺼짐)"));
+      $("#rBig").textContent = o.r.dec ? `${o.r.dec} · ${DEC_KO[o.r.dec]}` : "판단 불가";
+      const showR = o.withReason && o.r.reason;
+      rs.classList.toggle("hidden", !showR && !o.cut);
+      rs.textContent = (showR ? "이유: " + o.r.reason : "") +
+        (o.cut ? (showR ? "\n" : "") + "⚠ 답이 중간에 잘렸어요. 중계 서버가 예전 버전(답 20토큰 제한)일 수 있어요." : "");
+      $("#rRaw").textContent = o.r.text.trim() || "(빈 답)";
+      $("#rSent").textContent = o.sentText;
     }
-    $("#rMs").textContent = (r.ms / 1000).toFixed(2) + "초" + (r.reuse ? " · 같은 사진 다시 물음" : "");
-    $("#rPrompt").textContent = r.prompt;
+    $("#rMs").textContent = (o.ms / 1000).toFixed(2) + "초" + (o.reuse ? " · 같은 사진 다시 물음" : "");
+    $("#rPrompt").textContent = o.prompt;
+  }
+
+  async function doAsk5() {
+    if (!vlmPreflight(5)) return;
+    let shot = lastShot;
+    if (!shot) { shot = capture(); if (!shot) return; lastShot = shot; }
+    showLastShot(shot.dataUrl);
+    const rule = $("#vlmRule").value.trim();
+    const withReason = settings.showReason;
+    const prompt = buildPrompt(rule, withReason);
+    const box = $("#fiveBox"), tb = $("#fiveTable tbody");
+    box.classList.remove("hidden");
+    tb.innerHTML = "";
+    $("#fiveSum").textContent = "같은 사진 5번 묻는 중…";
+    busy = true;
+    const tally = {};
+    for (let i = 1; i <= 5; i++) {
+      setAskUI(true, `${i}/5번째 묻는 중…`);
+      const r = await callOnce(shot, prompt, withReason);
+      const ans = r.error ? "오류" : (r.dec || "판단 불가");
+      tally[ans] = (tally[ans] || 0) + 1;
+      tb.insertAdjacentHTML("beforeend", `<tr><td>${i}</td><td><b>${esc(ans)}</b></td><td>${esc(r.error || r.reason || (withReason ? "" : "(이유 보이기 꺼짐)"))}</td><td>${(r.ms / 1000).toFixed(2)}초</td></tr>`);
+      lastRec.vlm = addRecord({ mode: "VLM", target: rule, answer: r.error ? "(오류) " + r.error : r.text.trim(), decision: r.error ? "" : (r.dec ? DEC_KO[r.dec] : "판단 불가"), sent: "", latency: r.ms, reuse: i > 1, five: i + "/5", reason: withReason });
+    }
+    busy = false; setAskUI(false);
+    lastCallAt = Date.now();
+    const parts = Object.keys(tally).map((k) => `${k} ${tally[k]}번`);
+    $("#fiveSum").textContent = (Object.keys(tally).length > 1 ? "답이 흔들렸어요 · " : "5번 모두 같은 답 · ") + parts.join(" · ");
+  }
+
+  // ---------- 학습 모델 (Teachable Machine) ----------
+  // Teachable Machine 내보내기 예제와 같은 조합 (tmImage 0.8.x는 TensorFlow.js 1.3.1 기준)
+  const TF_URLS = [
+    "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js",
+    "https://unpkg.com/@tensorflow/tfjs@1.3.1/dist/tf.min.js"
+  ];
+  const TM_URLS = [
+    "https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.5/dist/teachablemachine-image.min.js",
+    "https://unpkg.com/@teachablemachine/image@0.8.5/dist/teachablemachine-image.min.js"
+  ];
+  const TM_ACTIONS = [
+    ["L", "L · 왼쪽 상자 (150°)"], ["R", "R · 오른쪽 상자 (30°)"], ["N", "N · 보류 (X 표시)"],
+    ["C", "C · 수평"], ["A", "각도 직접"], ["NAME", "이름 그대로 보내기"], ["", "보내지 않음"]
+  ];
+  let tmModel = null, tmLabels = [], tmKey = "", tmLoading = false, tmBusy = false;
+  let tmAutoTimer = null, tmAutoGen = 0;
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src; s.async = true;
+      s.onload = () => resolve();
+      s.onerror = () => { s.remove(); reject(new Error("load fail: " + src)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  async function loadFirst(urls, ready) {
+    for (const u of urls) {
+      try { await loadScript(u); if (ready()) return; } catch (e) {}
+    }
+    throw new Error("lib");
+  }
+
+  async function ensureTmLib() {
+    if (!window.tf) await loadFirst(TF_URLS, () => !!window.tf);
+    if (!window.tmImage) await loadFirst(TM_URLS, () => !!window.tmImage);
+  }
+
+  function tmBase(u) {
+    u = String(u || "").trim().replace(/[?#].*$/, "").replace(/(model|metadata)\.json$/i, "");
+    if (u && !u.endsWith("/")) u += "/";
+    return u;
+  }
+
+  // 클래스 이름으로 동작 추측
+  function guessAction(name) {
+    const n = String(name || "").toLowerCase().replace(/\s+/g, "");
+    if (/없|빈|배경|^none$|nothing|background|empty|^n$/.test(n)) return "N";
+    if (/왼|^l$|left/.test(n)) return "L";
+    if (/오른|^r$|right/.test(n)) return "R";
+    if (/가운|중앙|중간|수평|^c$|center|centre|middle/.test(n)) return "C";
+    return "";
+  }
+
+  function tmActionOf(label) {
+    const m = (settings.tmMaps || {})[tmKey] || {};
+    return Object.prototype.hasOwnProperty.call(m, label) ? m[label] : guessAction(label);
+  }
+
+  function setTmAction(label, val) {
+    settings.tmMaps = Object.assign({}, settings.tmMaps);
+    settings.tmMaps[tmKey] = Object.assign({}, settings.tmMaps[tmKey], { [label]: val });
+    saveSettings(true);
+  }
+
+  const nameCmd = (label) => String(label).replace(/[\r\n]+/g, " ").trim().slice(0, 30);
+
+  function actionText(a, label) {
+    if (!a) return "보내지 않음";
+    if (a === "NAME") return `"${nameCmd(label)}" (이름 그대로)`;
+    if (a[0] === "A") return a + " (" + a.slice(1) + "°)";
+    return a + " (" + (CMD_KO[a] || a) + ")";
+  }
+
+  function setTmStatus(msg, kind) {
+    const s = $("#tmStatus");
+    s.textContent = msg;
+    s.style.color = kind === "ok" ? "var(--ok)" : kind === "bad" ? "var(--bad)" : "";
+  }
+
+  function renderTmChip() {
+    setChip("#chipTm", !!tmModel, tmModel ? `학습 모델: 클래스 ${tmLabels.length}개` : "학습 모델 없음");
+  }
+
+  function renderTmRows() {
+    $("#tmRows").innerHTML = tmLabels.map((lab, i) => {
+      const a = tmActionOf(lab);
+      const sel = a && a[0] === "A" ? "A" : a;
+      const opts = TM_ACTIONS.map(([v, t]) => `<option value="${v}"${v === sel ? " selected" : ""}>${t}</option>`).join("");
+      const ang = a && a[0] === "A" ? a.slice(1) : "90";
+      return `<div class="tmRow">
+        <div class="tmName">${esc(lab)}</div>
+        <div class="tmBar"><i></i><b>—</b></div>
+        <div class="tmAct"><select class="tmSel" data-i="${i}" title="이 클래스로 판단했을 때 할 일">${opts}</select>
+          <input type="number" class="tmAng${sel === "A" ? "" : " hidden"}" data-i="${i}" min="0" max="180" step="5" value="${esc(ang)}" title="서보 각도 (0~180)"></div>
+      </div>`;
+    }).join("");
+  }
+
+  function showTmBars(preds, topIdx) {
+    $$("#tmRows .tmRow").forEach((row, i) => {
+      const p = Math.round(((preds[i] && preds[i].probability) || 0) * 100);
+      row.querySelector("i").style.width = p + "%";
+      row.querySelector("b").textContent = p + "%";
+      row.classList.toggle("top", i === topIdx);
+    });
+  }
+
+  async function loadTm(source) {
+    if (tmLoading) return;
+    tmLoading = true;
+    stopTmAuto();
+    const btn = $("#btnTmLoad");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>불러오는 중…';
+    setTmStatus("모델을 불러오는 중이에요… (처음에는 몇 초 걸려요)");
+    try {
+      try { await ensureTmLib(); }
+      catch (e) { throw new Error("학습 모델 실행 도구를 내려받지 못했어요. 인터넷 연결이나 학교망 차단을 확인하세요."); }
+      let m;
+      if (source.files) {
+        m = await tmImage.loadFromFiles(source.files.model, source.files.weights, source.files.metadata);
+      } else {
+        const base = tmBase(source.url);
+        m = await tmImage.load(base + "model.json", base + "metadata.json");
+      }
+      const labels = (m.getClassLabels() || []).map(String);
+      if (!labels.length) throw new Error("모델에 클래스가 없어요. metadata.json을 확인하세요.");
+      if (tmModel) { try { tmModel.model.dispose(); } catch (e) {} }
+      tmModel = m; tmLabels = labels; tmKey = labels.join("\u0001");
+      renderTmRows();
+      $("#tmBox").classList.remove("hidden");
+      $("#tmResult").classList.add("hidden");
+      const unset = labels.filter((l) => !tmActionOf(l)).length;
+      setTmStatus(`불러옴 · 클래스 ${labels.length}개 (${labels.join(", ")})` +
+        (unset ? ` · '보내지 않음'인 클래스 ${unset}개는 할 일을 고르세요` : " · 동작 연결됨"), "ok");
+      renderTmChip();
+      try { const c = document.createElement("canvas"); c.width = c.height = 224; await tmModel.predict(c); } catch (e) {}
+      tmFrame();
+      toast("학습 모델을 불러왔어요", "ok");
+    } catch (e) {
+      const msg = e && e.message && /[가-힣]/.test(e.message) ? e.message :
+        "모델을 불러오지 못했어요. 링크 전체를 복사했는지, Teachable Machine에서 '모델 업로드'를 눌렀는지 확인하세요.";
+      setTmStatus(msg, "bad");
+      toast(msg, "bad");
+    } finally {
+      tmLoading = false;
+      btn.disabled = false;
+      btn.textContent = "모델 불러오기";
+    }
+  }
+
+  // 카메라 화면의 가운데 정사각형을 모델 크기로 잘라 #tmView에 그림 (이 그림이 그대로 모델에 들어감)
+  function tmFrame() {
+    if (!camOn()) return null;
+    const c = $("#tmView");
+    const size = (tmModel && tmModel.getMetadata && tmModel.getMetadata().imageSize) || 224;
+    if (c.width !== size) { c.width = size; c.height = size; }
+    const ctx = c.getContext("2d");
+    const vw = video.videoWidth, vh = video.videoHeight, m = Math.min(vw, vh);
+    ctx.save();
+    if (settings.tmFlip) { ctx.translate(size, 0); ctx.scale(-1, 1); }
+    ctx.drawImage(video, (vw - m) / 2, (vh - m) / 2, m, m, 0, 0, size, size);
+    ctx.restore();
+    return c;
+  }
+
+  async function tmEvaluate(wait) {
+    if (!tmModel) return null;
+    if (wait) { for (let i = 0; tmBusy && i < 50; i++) await sleep(30); }
+    if (tmBusy) return null;
+    const frame = tmFrame();
+    if (!frame) return null;
+    tmBusy = true;
+    const t0 = performance.now();
+    let preds;
+    try { preds = await tmModel.predict(frame); }
+    catch (e) { tmBusy = false; return { error: e.message }; }
+    const ms = Math.round(performance.now() - t0);
+    tmBusy = false;
+    let topIdx = 0;
+    preds.forEach((p, i) => { if (p.probability > preds[topIdx].probability) topIdx = i; });
+    const label = tmLabels[topIdx] ?? preds[topIdx].className;
+    const pct = Math.round(preds[topIdx].probability * 100);
+    const pass = pct >= Number(settings.tmThreshold);
+    const action = tmActionOf(label);
+    showTmBars(preds, topIdx);
+    const key = !pass || !action ? "" : action === "NAME" ? "NAME:" + label : action;
+    return { label, pct, pass, action, ms, frame, key };
+  }
+
+  async function tmCommit(ev, auto) {
+    let sent = "", sentText;
+    if (!ev.pass) sentText = `보내지 않음 (확신도 ${ev.pct}% < 인식 기준 ${settings.tmThreshold}%)`;
+    else if (!ev.action) sentText = "보내지 않음 (이 클래스는 '보내지 않음')";
+    else if (!settings.autoSend) sentText = "보내지 않음 (보내기 꺼짐)";
+    else if (!writer) { sentText = "보내지 못함 (micro:bit 연결 확인)"; if (!auto) toast("먼저 'micro:bit 연결'을 누르세요", "warn"); }
+    else {
+      const out = ev.action === "NAME" ? nameCmd(ev.label) : ev.action;
+      const ok = ev.action === "NAME" ? await sendCmd(out) : await act(out);
+      if (ok) { sent = out; sentText = actionText(ev.action, ev.label); } else sentText = "보내지 못함";
+    }
+    $("#tmResult").classList.remove("hidden");
+    $("#tmBig").textContent = `${ev.label} · ${ev.pct}%` + (auto ? " · 자동" : "");
+    $("#tmSent").textContent = sentText;
+    $("#tmMs").textContent = (ev.ms / 1000).toFixed(2) + "초";
+    markJudge("#tmJudge", "");
+    showLastShot(ev.frame.toDataURL("image/jpeg", 0.85));
+    lastRec.tm = addRecord({
+      mode: "학습 모델", auto, target: tmLabels.join("·"), answer: `${ev.label} ${ev.pct}%`,
+      decision: ev.pass ? actionText(ev.action, ev.label) : "보류 (기준 미달)", sent, latency: ev.ms
+    });
+  }
+
+  async function tmOnce() {
+    if (!tmModel) { toast("먼저 학습 모델을 불러오세요", "warn"); return; }
+    if (!camOn()) { toast("먼저 '카메라 켜기'를 누르세요", "warn"); return; }
+    const ev = await tmEvaluate(true);
+    if (!ev) return;
+    if (ev.error) { toast("판단하지 못했어요: " + ev.error, "bad"); return; }
+    await tmCommit(ev, false);
+  }
+
+  function stopTmAuto() {
+    tmAutoGen++;
+    clearTimeout(tmAutoTimer); tmAutoTimer = null;
+    const cb = $("#tmAuto");
+    if (cb) cb.checked = false;
+  }
+
+  async function tmAutoLoop(gen) {
+    if (gen !== tmAutoGen) return;
+    if (!camOn()) { stopTmAuto(); toast("카메라가 꺼져서 자동 분류를 멈췄어요", "warn"); return; }
+    const ev = await tmEvaluate(false);
+    if (gen !== tmAutoGen) return;
+    if (ev && !ev.error) await sorterFeed(ev.key, () => tmCommit(ev, true));
+    if (gen === tmAutoGen) tmAutoTimer = setTimeout(() => tmAutoLoop(gen), 400);
+  }
+
+  function onTmTabShown() {
+    if (!tmModel && !tmLoading && settings.tmUrl) loadTm({ url: settings.tmUrl });
+    else if (tmModel) tmFrame();
+  }
+
+  // ---------- 시연 (녹화·재생·배우기·정책) ----------
+  let demos = store.get("pai.demos", []);
+  if (!Array.isArray(demos)) demos = [];
+  let demoAngle = 90, demoRec = null, recTicker = null, policy = null;
+  const play = { gen: 0, on: false };
+  let angleTimer = null, pendingAngle = null, lastAngleAt = 0;
+
+  function angleText(a) {
+    a = Math.round(a);
+    if (a > 90) return `왼쪽으로 ${a - 90}° (${a}°)`;
+    if (a < 90) return `오른쪽으로 ${90 - a}° (${a}°)`;
+    return "수평 (90°)";
+  }
+
+  function renderGauge() {
+    $("#trayBar").style.transform = `rotate(${-(demoAngle - 90)}deg)`;
+    $("#demoAngleVal").textContent = Math.round(demoAngle) + "°";
+    $("#demoAngleTxt").textContent = angleText(demoAngle);
+  }
+
+  // 각도 명령은 60ms에 한 번만 보내되 마지막 값은 꼭 보냄
+  function flushAngle() {
+    clearTimeout(angleTimer); angleTimer = null;
+    if (pendingAngle == null) return;
+    const a = pendingAngle; pendingAngle = null; lastAngleAt = performance.now();
+    sendCmd("A" + a, { quiet: true });
+  }
+  function angleSend(a) {
+    pendingAngle = a;
+    const dt = performance.now() - lastAngleAt;
+    if (dt >= 60) flushAngle();
+    else if (!angleTimer) angleTimer = setTimeout(flushAngle, 60 - dt);
+  }
+
+  function demoSetAngle(a) {
+    if (play.on) return;
+    clearTimeout(returnTimer); returnTimer = null;
+    a = clamp(Math.round(a), 0, 180);
+    if (a === demoAngle) return;
+    demoAngle = a;
+    renderGauge();
+    angleSend(a);
+    if (demoRec) demoRec.samples.push({ t: Math.round(performance.now() - demoRec.t0), a });
+  }
+
+  function returnToLevel(note) {
+    demoAngle = 90; renderGauge();
+    pendingAngle = null; clearTimeout(angleTimer); angleTimer = null;
+    sendCmd("C", { quiet: true, note: note || "수평" });
+  }
+
+  // 관측: 접시 사진을 32x24로 줄인 픽셀 값(특징)과 목록용 작은 사진
+  function makeObs() {
+    const fc = document.createElement("canvas"); fc.width = 32; fc.height = 24;
+    const fx = fc.getContext("2d", { willReadFrequently: true });
+    fx.drawImage(video, 0, 0, 32, 24);
+    const d = fx.getImageData(0, 0, 32, 24).data;
+    const feat = [];
+    for (let i = 0; i < d.length; i += 4) feat.push(d[i], d[i + 1], d[i + 2]);
+    const tc = document.createElement("canvas"); tc.width = 160; tc.height = 120;
+    const tx = tc.getContext("2d");
+    if (settings.mirror) { tx.translate(160, 0); tx.scale(-1, 1); }
+    tx.drawImage(video, 0, 0, 160, 120);
+    return { feat, thumb: tc.toDataURL("image/jpeg", 0.7) };
+  }
+
+  // 두 사진의 비슷한 정도: 밝기 평균을 뺀 뒤 코사인 유사도
+  function similarity(a, b) {
+    const n = Math.min(a.length, b.length);
+    if (!n) return 0;
+    let ma = 0, mb = 0;
+    for (let i = 0; i < n; i++) { ma += a[i]; mb += b[i]; }
+    ma /= n; mb /= n;
+    let dot = 0, na = 0, nb = 0;
+    for (let i = 0; i < n; i++) { const x = a[i] - ma, y = b[i] - mb; dot += x * y; na += x * x; nb += y * y; }
+    return na && nb ? dot / Math.sqrt(na * nb) : 0;
+  }
+
+  function saveDemos() {
+    if (!store.set("pai.demos", demos)) toast("시연을 저장할 공간이 부족해요. 오래된 시연을 지워 주세요.", "warn");
+  }
+
+  function setRecUI() {
+    const b = $("#btnRec");
+    if (demoRec) {
+      b.className = "btn rec"; b.innerHTML = "■ 시연 녹화 끝<kbd>Enter</kbd>";
+      $("#recState").className = "recState on";
+    } else {
+      b.className = "btn primary"; b.innerHTML = "● 시연 녹화 시작<kbd>Enter</kbd>";
+      $("#recState").className = "recState"; $("#recState").textContent = "";
+    }
+  }
+
+  function startDemoRec() {
+    if (play.on || demoRec) return;
+    if (!camOn()) { toast("시연을 녹화하려면 먼저 카메라를 켜세요 (접시 사진도 함께 저장해요)", "warn"); return; }
+    returnToLevel("녹화 시작 전 수평");
+    const obs = makeObs();
+    demoRec = { t0: performance.now(), samples: [{ t: 0, a: 90 }], obs, name: $("#demoName").value.trim() };
+    setRecUI();
+    recTicker = setInterval(() => {
+      if (!demoRec) return;
+      const s = (performance.now() - demoRec.t0) / 1000;
+      $("#recState").textContent = `녹화 중 ${s.toFixed(1)}초 · ← → 로 기울이세요` + (writer ? "" : " · micro:bit 미연결(움직임만 기록)");
+      if (s > 20) stopDemoRec();
+    }, 100);
+  }
+
+  function stopDemoRec() {
+    const r = demoRec;
+    if (!r) return;
+    demoRec = null;
+    clearInterval(recTicker); recTicker = null;
+    flushAngle();
+    const dur = Math.round(performance.now() - r.t0);
+    r.samples.push({ t: dur, a: demoAngle });
+    setRecUI();
+    const peak = r.samples.reduce((p, s) => (Math.abs(s.a - 90) > Math.abs(p - 90) ? s.a : p), 90);
+    returnToLevel("시연 끝");
+    if (peak === 90) { toast("움직임이 없어서 저장하지 않았어요. 녹화 중에 ← → 키로 기울이세요", "warn"); return; }
+    const id = demos.reduce((m, d) => Math.max(m, d.id), 0) + 1;
+    demos.push({ id, name: r.name || ("시연 " + id), time: hms(), thumb: r.obs.thumb, feat: r.obs.feat, samples: r.samples, peak, dur });
+    saveDemos();
+    renderDemos();
+    renderPolicyState();
+    toast(`시연 #${id} 저장 · ${angleText(peak)}`, "ok");
+  }
+
+  function setPlayUI(on) {
+    $("#btnStopPlay").disabled = !on;
+    $("#btnReplay").disabled = on; $("#btnPolicy").disabled = on; $("#btnRec").disabled = on;
+  }
+
+  // 시연의 각도 움직임을 녹화 때 빠르기 그대로 다시 보냄
+  function replayDemo(d) {
+    return new Promise((resolve) => {
+      const g = ++play.gen;
+      play.on = true; setPlayUI(true);
+      const samples = d.samples.slice().sort((a, b) => a.t - b.t);
+      const start = performance.now();
+      let i = 0, lastA = null;
+      const step = () => {
+        if (g !== play.gen) { resolve(false); return; }
+        const t = performance.now() - start;
+        let a = null;
+        while (i < samples.length && samples[i].t <= t) { a = samples[i].a; i++; }
+        if (a !== null && a !== lastA) { lastA = a; demoAngle = a; renderGauge(); sendCmd("A" + a, { quiet: true }); }
+        if (i >= samples.length) {
+          setTimeout(() => {
+            if (g === play.gen) { play.on = false; setPlayUI(false); returnToLevel("재생 끝"); }
+            resolve(g === play.gen);
+          }, 300);
+          return;
+        }
+        setTimeout(step, clamp(samples[i].t - t, 10, 60));
+      };
+      step();
+    });
+  }
+
+  function stopPlay() {
+    if (!play.on) return;
+    play.gen++; play.on = false; setPlayUI(false);
+    returnToLevel("멈춤");
+  }
+
+  async function replayLast() {
+    if (play.on || demoRec) return;
+    const d = demos[demos.length - 1];
+    if (!d) { toast("먼저 시연을 녹화하세요", "warn"); return; }
+    lastRec.demo = addRecord({ mode: "재생", target: `#${d.id} ${d.name}`, answer: "지금 사진은 보지 않음", decision: angleText(d.peak), sent: `#${d.id} 움직임 재생`, latency: "" });
+    $("#polResult").classList.add("hidden");
+    markJudge("#demoJudge", "");
+    await replayDemo(d);
+  }
+
+  function learn() {
+    if (demos.length < 2) { toast("시연이 2개 이상 있어야 배울 수 있어요", "warn"); return; }
+    policy = { ids: demos.map((d) => d.id), n: demos.length, kinds: new Set(demos.map((d) => d.name)).size, at: hms() };
+    renderPolicyState(); renderDemos();
+    toast(`시연 ${policy.n}개로 배웠어요`, "ok");
+  }
+
+  function renderPolicyState() {
+    const el = $("#policyState");
+    if (!policy) { el.textContent = demos.length < 2 ? "시연을 2개 이상 녹화한 뒤 '배우기'" : "아직 배우지 않았어요"; return; }
+    const changed = demos.length !== policy.n || demos.some((d) => !policy.ids.includes(d.id));
+    el.textContent = `시연 ${policy.n}개(물건 ${policy.kinds}종)로 배움 · ${policy.at}` + (changed ? " · 시연이 바뀌었어요, 다시 '배우기'" : "");
+  }
+
+  async function runPolicy() {
+    if (play.on || demoRec) return;
+    if (!policy) { toast("먼저 '배우기'를 누르세요", "warn"); return; }
+    if (!camOn()) { toast("먼저 '카메라 켜기'를 누르세요", "warn"); return; }
+    const t0 = performance.now();
+    const obs = makeObs();
+    const cands = demos.filter((d) => policy.ids.includes(d.id))
+      .map((d) => ({ d, s: similarity(obs.feat, d.feat) }))
+      .sort((a, b) => b.s - a.s);
+    if (!cands.length) { toast("배운 시연이 없어요. 다시 '배우기'를 누르세요", "warn"); return; }
+    const best = cands[0], ms = Math.round(performance.now() - t0);
+    const pct = (s) => Math.round(Math.max(0, s) * 100) + "%";
+    $("#polResult").classList.remove("hidden");
+    $("#polNow").src = obs.thumb;
+    $("#polRef").src = best.d.thumb;
+    $("#polRefCap").textContent = `참고한 시연 #${best.d.id} ${best.d.name}`;
+    $("#polWho").textContent = `#${best.d.id} ${best.d.name} · 비슷한 정도 ${pct(best.s)}`;
+    $("#polMove").textContent = angleText(best.d.peak) + ` · ${(best.d.dur / 1000).toFixed(1)}초`;
+    $("#polRank").textContent = cands.slice(0, 3).map((c, i) => `${i + 1}. #${c.d.id} ${c.d.name} ${pct(c.s)}`).join("   ");
+    markJudge("#demoJudge", "");
+    showLastShot(obs.thumb);
+    renderDemos(best.d.id);
+    lastRec.demo = addRecord({ mode: "정책", target: `시연 ${policy.n}개`, answer: `참고: #${best.d.id} ${best.d.name} (${pct(best.s)})`, decision: angleText(best.d.peak), sent: `#${best.d.id} 움직임 재생`, latency: ms });
+    await replayDemo(best.d);
+  }
+
+  function renderDemos(refId) {
+    $("#demoCount").textContent = demos.length ? `(${demos.length})` : "";
+    const inPolicy = (id) => !policy || policy.ids.includes(id);
+    $("#demoList").innerHTML = demos.slice().reverse().map((d) => `
+      <div class="demoItem${d.id === refId ? " ref" : ""}${inPolicy(d.id) ? "" : " old"}">
+        <img src="${d.thumb}" alt="시연 #${d.id}">
+        <button class="x" data-id="${d.id}" title="이 시연 지우기">✕</button>
+        <div><b>#${d.id} ${esc(d.name)}</b></div>
+        <div class="hint">${esc(angleText(d.peak))} · ${(d.dur / 1000).toFixed(1)}초</div>
+      </div>`).join("") || `<div class="hint" style="grid-column:1/-1">아직 시연이 없어요. 물건을 올리고 '시연 녹화 시작' → ← → 로 기울이기 → '녹화 끝'</div>`;
   }
 
   // ---------- 기록 ----------
@@ -735,12 +1780,7 @@ basic.showIcon(IconNames.Yes)`;
 
   function addRecord(r) {
     const id = (records.reduce((m, x) => Math.max(m, x.id || 0), 0)) + 1;
-    const rec = Object.assign({
-      id,
-      time: hms(),
-      cond: $("#condition").value.trim(),
-      verdict: ""
-    }, r);
+    const rec = Object.assign({ id, time: hms(), cond: $("#condition").value.trim(), verdict: "" }, r);
     records.push(rec);
     saveRecords();
     renderRecords();
@@ -755,21 +1795,16 @@ basic.showIcon(IconNames.Yes)`;
     renderRecords();
   }
 
-  function decisionText(rec) {
-    if (rec.mode === "사람") return rec.sent ? CMD_KO[rec.sent] || rec.sent : "";
-    if (KO[rec.decision]) return rec.decision + " (" + KO[rec.decision] + ")";
-    return rec.decision || "";
-  }
+  const modeText = (r) => r.mode + (r.auto ? " · 자동" : "") + (r.five ? " · 5번 묻기 " + r.five : r.reuse ? " ↻" : "") + (r.reason ? " · 이유" : "");
 
   function renderRecords() {
     $("#recCount").textContent = records.length ? "(" + records.length + ")" : "";
-    const tb = $("#recTable tbody");
-    tb.innerHTML = records.slice().reverse().map((r) => `
+    $("#recTable tbody").innerHTML = records.slice().reverse().map((r) => `
       <tr>
-        <td>${r.id}</td><td>${esc(r.time)}</td><td>${esc(r.mode)}${r.reuse ? " ↻" : ""}</td>
+        <td>${r.id}</td><td>${esc(r.time)}</td><td>${esc(modeText(r))}</td>
         <td>${esc(r.cond || "—")}</td><td>${esc(r.target || "")}</td>
-        <td>${esc(r.answer || "")}</td><td>${esc(decisionText(r))}</td><td>${esc(r.sent || "")}</td>
-        <td>${r.latency !== "" && r.latency != null ? (r.latency / 1000).toFixed(2) + "초" : ""}</td>
+        <td>${esc(r.answer || "")}</td><td>${esc(r.decision || "")}</td><td>${esc(r.sent || "")}</td>
+        <td>${typeof r.latency === "number" ? (r.latency / 1000).toFixed(2) + "초" : ""}</td>
         <td class="v-${esc(r.verdict)}">
           <select data-id="${r.id}" class="verdictSel">
             <option value=""${!r.verdict ? " selected" : ""}>—</option>
@@ -788,20 +1823,20 @@ basic.showIcon(IconNames.Yes)`;
       g.n++;
       if (r.verdict === "O" || r.verdict === "X") g.judged++;
       if (r.verdict === "O") g.ok++;
-      if (r.mode === "VLM" && typeof r.latency === "number" && !String(r.answer).startsWith("(오류)")) { g.msSum += r.latency; g.msN++; }
+      if (typeof r.latency === "number" && !String(r.answer).startsWith("(오류)")) { g.msSum += r.latency; g.msN++; }
     });
     $("#sumTable tbody").innerHTML = Array.from(groups.values()).map((g) => `
       <tr><td>${esc(g.mode)}</td><td>${esc(g.cond || "—")}</td><td>${g.n}</td><td>${g.judged}</td><td>${g.ok}</td>
       <td>${g.judged ? Math.round((g.ok / g.judged) * 100) + "%" : "—"}</td>
-      <td>${g.msN ? (g.msSum / g.msN / 1000).toFixed(2) + "초" : "—"}</td></tr>`).join("")
-      || `<tr><td colspan="7" class="hint">아직 기록이 없어요</td></tr>`;
+      <td>${g.msN ? (g.msSum / g.msN / 1000).toFixed(2) + "초" : "—"}</td><td>${esc(WHERE[g.mode] || "")}</td></tr>`).join("")
+      || `<tr><td colspan="8" class="hint">아직 기록이 없어요</td></tr>`;
   }
 
   function recordsAsRows() {
-    const head = ["번호", "시각", "방식", "실험 조건", "찾을 물체", "AI 답", "판단", "보낸 명령", "응답 시간(초)", "판정"];
+    const head = ["번호", "시각", "방식", "실험 조건", "기준·대상", "AI 답", "판단", "보낸 명령", "판단 시간(초)", "판정"];
     const rows = records.map((r) => [
-      r.id, r.time, r.mode + (r.reuse ? "(같은 사진)" : ""), r.cond || "", r.target || "", r.answer || "",
-      decisionText(r), r.sent || "",
+      r.id, r.time, modeText(r), r.cond || "", r.target || "", r.answer || "",
+      r.decision || "", r.sent || "",
       (typeof r.latency === "number") ? (r.latency / 1000).toFixed(2) : "",
       r.verdict === "O" ? "맞음" : r.verdict === "X" ? "틀림" : ""
     ]);
@@ -829,6 +1864,8 @@ basic.showIcon(IconNames.Yes)`;
   }
 
   // ---------- 설정 ----------
+  function syncAutoSend() { $$(".autoSendCb").forEach((c) => { c.checked = settings.autoSend !== false; }); }
+
   function fillSettingsForm() {
     $$('input[name=mode]').forEach((r) => { r.checked = r.value === settings.mode; });
     $("#proxyUrl").value = settings.proxyUrl || "";
@@ -840,12 +1877,22 @@ basic.showIcon(IconNames.Yes)`;
     const savedKey = store.get("pai.apikey", "");
     $("#saveKey").checked = !!savedKey;
     $("#apiKey").value = getApiKey() ? "••••••••" : "";
-    $("#prompt").value = settings.prompt || DEFAULT_PROMPT;
     $("#mirror").checked = !!settings.mirror;
-    $("#autoSend").checked = settings.autoSend !== false;
     $("#recManual").checked = settings.recManual !== false;
-    $("#target").value = settings.target || DEFAULTS.target;
     $("#condition").value = settings.condition || "";
+    $("#autoReturn").checked = settings.autoReturn !== false;
+    $("#returnDelay").value = String(settings.returnDelay);
+    $("#ruleMin").value = settings.ruleMin;
+    $("#ruleTol").value = settings.ruleTol;
+    $("#tmUrl").value = settings.tmUrl || "";
+    $("#tmThreshold").value = settings.tmThreshold;
+    $("#tmThresholdVal").textContent = settings.tmThreshold + "%";
+    $("#tmFlip").checked = settings.tmFlip !== false;
+    $("#vlmRule").value = settings.vlmRule || "";
+    $("#showReason").checked = !!settings.showReason;
+    $("#vlmPrompt").value = settings.vlmPrompt || DEFAULT_VLM_PROMPT;
+    $("#demoStep").value = String(settings.demoStep);
+    syncAutoSend();
     toggleModeBoxes();
     renderShareLink();
   }
@@ -924,21 +1971,30 @@ basic.showIcon(IconNames.Yes)`;
     const b64 = c.toDataURL("image/jpeg", 0.8).split(",")[1];
     const t0 = performance.now();
     try {
-      const text = await askVLM(b64, "이 사진의 색을 한 단어로 답해.");
+      const r = await askVLM(b64, "이 사진의 색을 한 단어로 답해.", 20);
       calls += 1; store.set("pai.calls", calls); renderCalls();
-      out.textContent = `성공 · 답: "${text.trim()}" · ${((performance.now() - t0) / 1000).toFixed(2)}초`;
+      out.textContent = `성공 · 답: "${r.text.trim()}" · ${((performance.now() - t0) / 1000).toFixed(2)}초`;
     } catch (e) {
-      const msg = e.message === "Failed to fetch" ? "서버에 닿지 못했어요 (주소·인터넷 확인)" : e.message;
-      out.textContent = "실패 · " + msg;
+      out.textContent = "실패 · " + errMsg(e);
     }
   }
 
   // ---------- 탭 ----------
   let activeTab = "manual";
   function showTab(name) {
+    const prev = activeTab;
+    if (prev === name) return;
     activeTab = name;
     $$(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
     $$(".panel").forEach((p) => p.classList.toggle("active", p.id === "panel-" + name));
+    // 다른 탭의 명령과 섞이지 않게 떠나는 탭의 자동 동작은 멈춤
+    if (prev === "rule") ruleLoopStop();
+    if (prev === "tm") stopTmAuto();
+    if (prev === "demo") { if (demoRec) stopDemoRec(); stopPlay(); }
+    sorterReset();
+    if (name === "rule") ruleLoopStart();
+    if (name === "tm") onTmTabShown();
+    if (name === "demo") { renderDemos(); renderPolicyState(); renderGauge(); }
   }
 
   // ---------- 이벤트 연결 ----------
@@ -949,42 +2005,146 @@ basic.showIcon(IconNames.Yes)`;
   $("#btnCam").addEventListener("click", () => (stream ? stopCamera() : startCamera()));
   $("#camSelect").addEventListener("change", (e) => startCamera(e.target.value));
   $("#mirror").addEventListener("change", (e) => { settings.mirror = e.target.checked; applyMirror(); saveSettings(true); });
+  $("#autoReturn").addEventListener("change", (e) => { settings.autoReturn = e.target.checked; saveSettings(true); });
+  $("#returnDelay").addEventListener("change", (e) => { settings.returnDelay = Number(e.target.value) || 1.5; saveSettings(true); });
+  $("#condition").addEventListener("change", (e) => { settings.condition = e.target.value; saveSettings(true); });
+  $$(".autoSendCb").forEach((c) => c.addEventListener("change", (e) => { settings.autoSend = e.target.checked; syncAutoSend(); saveSettings(true); }));
 
-  async function manualSend(cmd, btn) {
-    if (btn) { btn.classList.add("flash"); setTimeout(() => btn.classList.remove("flash"), 200); }
-    const ok = await sendCmd(cmd);
-    if (ok && $("#recManual").checked) {
-      addRecord({ mode: "사람", target: "", answer: "", decision: "", sent: cmd, latency: "" });
-    }
-  }
+  // 사람
   $$(".pad button").forEach((b) => b.addEventListener("click", () => manualSend(b.dataset.cmd, b)));
+  $("#recManual").addEventListener("change", (e) => { settings.recManual = e.target.checked; saveSettings(true); });
+  bindJudge("#manJudge", "manual");
+  $("#angle").addEventListener("input", (e) => { $("#angleVal").textContent = e.target.value + "°"; });
+  $("#btnAngle").addEventListener("click", async () => {
+    const a = clamp(Math.round(Number($("#angle").value)), 0, 180);
+    clearTimeout(returnTimer); returnTimer = null;
+    const ok = await sendCmd("A" + a);
+    if (ok && settings.recManual) lastRec.manual = addRecord({ mode: "사람", target: "", answer: "각도 직접", decision: angleText(a), sent: "A" + a, latency: "" });
+  });
   $("#btnRaw").addEventListener("click", async () => {
     const v = $("#rawCmd").value.trim();
     if (!v) return;
+    clearTimeout(returnTimer); returnTimer = null;
     const ok = await sendCmd(v);
-    if (ok && $("#recManual").checked) addRecord({ mode: "사람", target: "", answer: "직접 입력", decision: "", sent: v, latency: "" });
+    if (ok && settings.recManual) lastRec.manual = addRecord({ mode: "사람", target: "", answer: "직접 입력", decision: "", sent: v, latency: "" });
   });
-  $("#recManual").addEventListener("change", (e) => { settings.recManual = e.target.checked; saveSettings(true); });
 
+  // 규칙
+  $("#panel-rule").addEventListener("click", (e) => {
+    const b = e.target.closest(".sw");
+    if (b) setRuleColor(b.dataset.side, b.dataset.c);
+  });
+  $("#panel-rule").addEventListener("change", (e) => {
+    if (e.target.type === "color") setRuleColor(e.target.dataset.side, e.target.value);
+  });
+  $("#ruleMin").addEventListener("input", (e) => { settings.ruleMin = Number(e.target.value); $("#ruleMinVal").textContent = settings.ruleMin + "픽셀"; });
+  $("#ruleMin").addEventListener("change", () => saveSettings(true));
+  $("#ruleTol").addEventListener("input", (e) => { settings.ruleTol = Number(e.target.value); $("#ruleTolVal").textContent = "±" + settings.ruleTol + "°"; });
+  $("#ruleTol").addEventListener("change", () => saveSettings(true));
+  $("#btnRule").addEventListener("click", ruleOnce);
+  $("#ruleAuto").addEventListener("change", (e) => {
+    sorterReset();
+    if (e.target.checked && !camOn()) { e.target.checked = false; toast("먼저 '카메라 켜기'를 누르세요", "warn"); }
+  });
+  bindJudge("#ruleJudge", "rule");
+
+  // 학습 모델
+  $("#btnTmLoad").addEventListener("click", () => {
+    const u = $("#tmUrl").value.trim();
+    if (!u) { toast("Teachable Machine 공유 링크를 넣어 주세요", "warn"); return; }
+    if (!/^https?:\/\//i.test(u)) { toast("https:// 로 시작하는 링크 전체를 넣어 주세요", "warn"); return; }
+    settings.tmUrl = u; saveSettings(true);
+    loadTm({ url: u });
+  });
+  $("#tmUrl").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#btnTmLoad").click(); });
+  $("#tmFiles").addEventListener("change", (e) => {
+    const fs = Array.from(e.target.files || []);
+    const model = fs.find((f) => /(^|[^a-z])model\.json$/i.test(f.name) && !/metadata/i.test(f.name));
+    const metadata = fs.find((f) => /metadata\.json$/i.test(f.name));
+    const weights = fs.find((f) => /\.bin$/i.test(f.name));
+    e.target.value = "";
+    if (!model || !metadata || !weights) { toast("model.json · metadata.json · weights.bin 세 파일을 함께 고르세요", "warn"); return; }
+    loadTm({ files: { model, weights, metadata } });
+  });
+  $("#tmRows").addEventListener("change", (e) => {
+    const i = Number(e.target.dataset.i);
+    const label = tmLabels[i];
+    if (label === undefined) return;
+    const ang = e.target.closest(".tmRow").querySelector(".tmAng");
+    if (e.target.classList.contains("tmSel")) {
+      const v = e.target.value;
+      ang.classList.toggle("hidden", v !== "A");
+      setTmAction(label, v === "A" ? "A" + Math.round(clamp(Number(ang.value) || 90, 0, 180)) : v);
+    } else if (e.target.classList.contains("tmAng")) {
+      const deg = Math.round(clamp(Number(e.target.value) || 0, 0, 180));
+      e.target.value = deg;
+      setTmAction(label, "A" + deg);
+    }
+    sorterReset();
+  });
+  $("#tmThreshold").addEventListener("input", (e) => {
+    settings.tmThreshold = Number(e.target.value);
+    $("#tmThresholdVal").textContent = settings.tmThreshold + "%";
+  });
+  $("#tmThreshold").addEventListener("change", () => saveSettings(true));
+  $("#tmFlip").addEventListener("change", (e) => { settings.tmFlip = e.target.checked; saveSettings(true); tmFrame(); });
+  $("#btnTmPredict").addEventListener("click", tmOnce);
+  $("#tmAuto").addEventListener("change", (e) => {
+    if (!e.target.checked) { stopTmAuto(); return; }
+    if (!tmModel) { e.target.checked = false; toast("먼저 학습 모델을 불러오세요", "warn"); return; }
+    if (!camOn()) { e.target.checked = false; toast("먼저 '카메라 켜기'를 누르세요", "warn"); return; }
+    tmAutoGen++; sorterReset();
+    tmAutoLoop(tmAutoGen);
+  });
+  bindJudge("#tmJudge", "tm");
+
+  // VLM
+  $("#rulePresets").innerHTML = RULE_PRESETS.map(([n], i) => `<button class="btn" data-i="${i}">${esc(n)}</button>`).join("");
+  $("#rulePresets").addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    $("#vlmRule").value = RULE_PRESETS[Number(b.dataset.i)][1];
+    settings.vlmRule = $("#vlmRule").value; saveSettings(true);
+  });
+  $("#vlmRule").addEventListener("change", (e) => { settings.vlmRule = e.target.value.trim(); saveSettings(true); });
+  $("#showReason").addEventListener("change", (e) => { settings.showReason = e.target.checked; saveSettings(true); });
   $("#btnAsk").addEventListener("click", () => doAsk(false));
   $("#btnReask").addEventListener("click", () => doAsk(true));
-  $("#autoSend").addEventListener("change", (e) => { settings.autoSend = e.target.checked; saveSettings(true); });
-  $("#target").addEventListener("change", (e) => { settings.target = e.target.value; saveSettings(true); });
-  $("#condition").addEventListener("change", (e) => { settings.condition = e.target.value; saveSettings(true); });
-  $("#prompt").addEventListener("change", (e) => {
+  $("#btnAsk5").addEventListener("click", doAsk5);
+  $("#vlmPrompt").addEventListener("change", (e) => {
     const v = e.target.value.trim();
-    if (v && !v.includes("{물체}")) toast("문장에 {물체}가 없으면 찾을 물체가 들어가지 않아요", "warn");
-    settings.prompt = v || DEFAULT_PROMPT; saveSettings(true);
+    if (v && !v.includes("{기준}")) toast("문장에 {기준}이 없으면 분류 기준이 끝에 따로 붙어요", "warn");
+    settings.vlmPrompt = v || DEFAULT_VLM_PROMPT; saveSettings(true);
   });
-  $("#btnPromptReset").addEventListener("click", () => { settings.prompt = DEFAULT_PROMPT; $("#prompt").value = DEFAULT_PROMPT; saveSettings(true); toast("기본 문장으로 돌렸어요"); });
+  $("#btnPromptReset").addEventListener("click", () => { settings.vlmPrompt = DEFAULT_VLM_PROMPT; $("#vlmPrompt").value = DEFAULT_VLM_PROMPT; saveSettings(true); toast("기본 문장으로 돌렸어요"); });
+  bindJudge("#vlmJudge", "vlm");
 
-  $$("#judgeBox .btn").forEach((b) => b.addEventListener("click", () => {
-    if (lastRecId == null) return;
-    setVerdict(lastRecId, b.dataset.v);
-    $$("#judgeBox .btn").forEach((x) => x.classList.remove("sel-O", "sel-X"));
-    b.classList.add("sel-" + b.dataset.v);
-  }));
+  // 시연
+  const step = () => Number(settings.demoStep) || 3;
+  $("#btnTiltL").addEventListener("click", () => demoSetAngle(demoAngle + step()));
+  $("#btnTiltR").addEventListener("click", () => demoSetAngle(demoAngle - step()));
+  $("#btnLevel").addEventListener("click", () => demoSetAngle(90));
+  $("#demoStep").addEventListener("change", (e) => { settings.demoStep = Number(e.target.value) || 3; saveSettings(true); });
+  $("#btnRec").addEventListener("click", () => (demoRec ? stopDemoRec() : startDemoRec()));
+  $("#btnReplay").addEventListener("click", replayLast);
+  $("#btnStopPlay").addEventListener("click", stopPlay);
+  $("#btnLearn").addEventListener("click", learn);
+  $("#btnPolicy").addEventListener("click", runPolicy);
+  $("#demoList").addEventListener("click", (e) => {
+    const b = e.target.closest(".x");
+    if (!b) return;
+    const id = Number(b.dataset.id);
+    demos = demos.filter((d) => d.id !== id);
+    saveDemos(); renderDemos(); renderPolicyState();
+  });
+  $("#btnDemoClear").addEventListener("click", () => {
+    if (!demos.length) return;
+    if (!window.confirm("시연 " + demos.length + "개를 모두 지울까요?")) return;
+    demos = []; policy = null; saveDemos(); renderDemos(); renderPolicyState();
+  });
+  bindJudge("#demoJudge", "demo");
 
+  // 기록
   $("#recTable").addEventListener("change", (e) => {
     if (e.target.classList.contains("verdictSel")) setVerdict(Number(e.target.dataset.id), e.target.value);
   });
@@ -996,9 +2156,12 @@ basic.showIcon(IconNames.Yes)`;
   $("#btnClear").addEventListener("click", () => {
     if (!records.length) return;
     if (!window.confirm("기록 " + records.length + "개를 모두 지울까요? 지우기 전에 CSV로 저장해 두세요.")) return;
-    records = []; lastRecId = null; saveRecords(); renderRecords(); toast("기록을 지웠어요");
+    records = [];
+    Object.keys(lastRec).forEach((k) => { lastRec[k] = null; });
+    saveRecords(); renderRecords(); toast("기록을 지웠어요");
   });
 
+  // 설정
   $$('input[name=mode]').forEach((r) => r.addEventListener("change", toggleModeBoxes));
   $("#btnSaveSettings").addEventListener("click", () => { readSettingsForm(); saveSettings(false); fillSettingsForm(); renderCalls(); });
   $("#btnTest").addEventListener("click", testConnection);
@@ -1008,32 +2171,51 @@ basic.showIcon(IconNames.Yes)`;
     if (!v.startsWith("http")) { toast("아직 만들 수 있는 링크가 없어요", "warn"); return; }
     copyText(v, "배포 링크를 복사했어요");
   });
-  $("#btnCopyCode").addEventListener("click", () => copyText(MICROBIT_CODE, "micro:bit 코드를 복사했어요"));
+  $("#btnCopyCode1").addEventListener("click", () => copyText(MB_CODE_CMD, "명령 받기 코드를 복사했어요"));
+  $("#btnCopyCode2").addEventListener("click", () => copyText(MB_CODE_NAME, "클래스 이름 받기 코드를 복사했어요"));
 
+  // 키보드
   document.addEventListener("keydown", (e) => {
     const tag = (e.target.tagName || "").toLowerCase();
     if (["input", "textarea", "select"].includes(tag) || e.isComposing) return;
+    const space = e.code === "Space" || e.key === " ";
     if (activeTab === "manual") {
-      const map = { ArrowLeft: "L", ArrowUp: "C", ArrowRight: "R" };
+      const map = { ArrowLeft: "L", ArrowUp: "C", ArrowRight: "R", ArrowDown: "N" };
       if (map[e.key]) {
         e.preventDefault();
-        manualSend(map[e.key], $(`.pad button[data-cmd="${map[e.key]}"]`));
+        if (!e.repeat) manualSend(map[e.key], $(`.pad button[data-cmd="${map[e.key]}"]`));
       }
-    } else if (activeTab === "vlm" && (e.code === "Space" || e.key === " ")) {
-      e.preventDefault();
-      doAsk(false);
+    } else if (activeTab === "rule" && space) {
+      e.preventDefault(); if (!e.repeat) ruleOnce();
+    } else if (activeTab === "tm" && space) {
+      e.preventDefault(); if (!e.repeat) tmOnce();
+    } else if (activeTab === "vlm" && space) {
+      e.preventDefault(); if (!e.repeat) doAsk(false);
+    } else if (activeTab === "demo") {
+      if (e.key === "ArrowLeft") { e.preventDefault(); demoSetAngle(demoAngle + step()); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); demoSetAngle(demoAngle - step()); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); demoSetAngle(90); }
+      else if (e.key === "Enter") { e.preventDefault(); if (!e.repeat) (demoRec ? stopDemoRec() : startDemoRec()); }
+      else if (space) { e.preventDefault(); if (!e.repeat) runPolicy(); }
     }
   });
 
   window.addEventListener("beforeunload", () => { if (port) { try { port.close(); } catch (e) {} } });
 
   // ---------- 시작 ----------
-  $("#mbCode").textContent = MICROBIT_CODE;
+  $("#mbCode1").textContent = MB_CODE_CMD;
+  $("#mbCode2").textContent = MB_CODE_NAME;
   fillSettingsForm();
+  renderSwatches();
   applyMirror();
   renderRecords();
   renderVlmChip();
   renderCalls();
+  renderTmChip();
+  renderGauge();
+  renderDemos();
+  renderPolicyState();
+  showRuleLive(null);
   if (!("serial" in navigator)) {
     mbLog("이 브라우저는 micro:bit 연결(웹 시리얼)을 지원하지 않아요. Chrome·Edge로 열어 주세요.", "sys");
   } else {
@@ -1041,7 +2223,7 @@ basic.showIcon(IconNames.Yes)`;
   }
 
   // 테스트용으로 바깥에서 쓸 수 있게 노출
-  window.__pai = { parseAnswer, buildPrompt };
+  window.__pai = { parseAnswer, buildPrompt, guessAction, tmBase, rgbToHsv, similarity };
 })();
 </script>
 </body>
