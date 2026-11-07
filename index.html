@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>피지컬 AI 실습 웹앱 — micro:bit 서보</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --card:#ffffff; --ink:#1b2230; --sub:#5d6677; --line:#e2e6ec;
+    --accent:#2f6fed; --accent-soft:#e8f0fe; --ok:#1f9d55; --ok-soft:#e5f4e4;
+    --bad:#d64545; --bad-soft:#fbebeb; --warn:#b7791f; --warn-soft:#f9eeda;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
+       background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5}
+  button,input,select,textarea{font:inherit;color:inherit}
+  header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
+         padding:12px 20px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+  h1{font-size:18px;margin:0;letter-spacing:-0.2px}
+  h1 small{font-weight:400;color:var(--sub);font-size:13px;margin-left:6px}
+  h2{font-size:16px;margin:0}
+  h3{font-size:14px;margin:14px 0 6px;color:var(--sub);font-weight:600}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:#eef1f5;
+        font-size:13px;color:var(--sub);white-space:nowrap}
+  .chip .dot{width:8px;height:8px;border-radius:50%;background:#b8bfca}
+  .chip.on{color:var(--ink)} .chip.on .dot{background:var(--ok)}
+  .chip.warn .dot{background:var(--warn)}
+  main{display:grid;grid-template-columns:minmax(320px,5fr) 7fr;gap:16px;padding:16px 20px 40px;max-width:1400px;margin:0 auto}
+  @media (max-width:960px){main{grid-template-columns:1fr}}
+  .col{display:flex;flex-direction:column;gap:16px;min-width:0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  .row{display:flex;gap:8px;align-items:center}
+  .wrap{flex-wrap:wrap}
+  .between{justify-content:space-between}
+  .hint{color:var(--sub);font-size:13px}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 14px;cursor:pointer;transition:background .15s}
+  .btn:hover{background:#f2f4f7}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{background:#2560d6}
+  .btn.danger{color:var(--bad)}
+  .btn.big{padding:14px 22px;font-size:17px;font-weight:600}
+  kbd{font-family:inherit;font-size:12px;border:1px solid rgba(255,255,255,.6);border-radius:5px;padding:0 5px;margin-left:6px;opacity:.85}
+  .btn:not(.primary) kbd{border-color:var(--line)}
+  select,input[type=text],input[type=password],input[type=number],input[type=url],textarea{
+    border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;min-width:0}
+  textarea{width:100%;min-height:70px;resize:vertical}
+  label.toggle{display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+  .videoBox{position:relative;background:#0f141c;border-radius:10px;overflow:hidden;aspect-ratio:4/3;margin:10px 0}
+  .videoBox video{width:100%;height:100%;object-fit:contain;display:block}
+  .videoBox .placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9aa4b5;font-size:14px;text-align:center;padding:20px}
+  .shot{width:100%;max-height:180px;object-fit:contain;background:#0f141c;border-radius:8px;display:none}
+  .log{height:96px;overflow:auto;background:#f7f8fa;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:ui-monospace,Consolas,monospace;font-size:12.5px}
+  .log .out{color:var(--accent)} .log .in{color:var(--ok)} .log .sys{color:var(--sub)}
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:-4px -4px 14px;padding:0 4px;overflow-x:auto}
+  .tab{border:none;background:none;padding:10px 14px;cursor:pointer;color:var(--sub);border-bottom:2px solid transparent;white-space:nowrap}
+  .tab[aria-selected=true]{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+  .panel{display:none} .panel.active{display:block}
+  .lead{margin:0 0 12px;color:var(--sub)}
+  .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:8px 0 14px}
+  .pad button{border:1px solid var(--line);background:#fff;border-radius:12px;padding:22px 8px;cursor:pointer;font-size:28px;line-height:1.1}
+  .pad button span{display:block;font-size:15px;margin-top:6px;color:var(--sub)}
+  .pad button:active,.pad button.flash{background:var(--accent-soft);border-color:var(--accent)}
+  .field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+  .field label{font-size:13px;color:var(--sub)}
+  .condbar{display:flex;gap:8px;align-items:center;background:var(--accent-soft);border-radius:10px;padding:8px 12px;margin-bottom:14px}
+  .condbar input{flex:1}
+  .result{border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:14px}
+  .result .big{font-size:28px;font-weight:700;margin-bottom:6px}
+  .result.err{background:var(--bad-soft);border-color:#f2c9c9}
+  dl.kv{display:grid;grid-template-columns:110px 1fr;gap:4px 10px;margin:8px 0;font-size:14px}
+  dl.kv dt{color:var(--sub)} dl.kv dd{margin:0;word-break:break-all}
+  .judge{display:flex;gap:8px;align-items:center;margin-top:8px}
+  .judge .btn.sel-O{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+  .judge .btn.sel-X{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+  details{margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+  details summary{cursor:pointer;color:var(--sub)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+  th{color:var(--sub);font-weight:600;background:#fafbfc;position:sticky;top:0}
+  .tablebox{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+  td.v-O{color:var(--ok);font-weight:600} td.v-X{color:var(--bad);font-weight:600}
+  .note{background:var(--warn-soft);border-radius:10px;padding:10px 12px;font-size:13.5px;margin:10px 0}
+  .note.blue{background:var(--accent-soft)}
+  pre.code{background:#0f141c;color:#e6edf3;border-radius:10px;padding:12px;overflow:auto;font-size:12.5px;line-height:1.45}
+  ol.steps{padding-left:20px;margin:6px 0} ol.steps li{margin:4px 0}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b2230;color:#fff;padding:10px 16px;border-radius:10px;
+         font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:20}
+  .toast.show{opacity:.95} .toast.bad{background:var(--bad)} .toast.warn{background:#8a5a00} .toast.ok{background:var(--ok)}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:600px){.grid2{grid-template-columns:1fr}}
+  .hidden{display:none !important}
+</style>
+</head>
+<body>
+<header>
+  <h1>피지컬 AI 실습 웹앱<small>micro:bit 서보 · 사람 판단 / VLM 판단</small></h1>
+  <div class="chips">
+    <span class="chip" id="chipMb"><span class="dot"></span><span>micro:bit 미연결</span></span>
+    <span class="chip" id="chipCam"><span class="dot"></span><span>카메라 꺼짐</span></span>
+    <span class="chip" id="chipVlm"><span class="dot"></span><span>VLM 미설정</span></span>
+    <span class="chip" id="chipCalls"><span class="dot"></span><span>호출 0</span></span>
+  </div>
+</header>
+
+<main>
+  <div class="col">
+    <section class="card">
+      <div class="row between"><h2>micro:bit</h2><span class="hint" id="serialInfo">연결 안 됨</span></div>
+      <div class="row wrap" style="margin:10px 0">
+        <button class="btn primary" id="btnSerial">micro:bit 연결</button>
+        <button class="btn" id="btnSerialOff" disabled>연결 끊기</button>
+      </div>
+      <h3>주고받은 신호 (→ 보냄, ← micro:bit 응답)</h3>
+      <div class="log" id="mbLog"></div>
+    </section>
+
+    <section class="card">
+      <div class="row between"><h2>카메라</h2><span class="hint">미리보기 = AI가 보는 사진</span></div>
+      <div class="videoBox">
+        <video id="video" playsinline muted></video>
+        <div class="placeholder" id="camPlaceholder">카메라가 꺼져 있어요<br>아래 '카메라 켜기'를 누르세요</div>
+      </div>
+      <div class="row wrap">
+        <button class="btn" id="btnCam">카메라 켜기</button>
+        <select id="camSelect" title="카메라 선택" class="hidden"></select>
+        <label class="toggle" title="AI에게 보내는 사진도 함께 뒤집혀요"><input type="checkbox" id="mirror"> 좌우 반전</label>
+      </div>
+      <h3>마지막으로 AI에게 보낸 사진</h3>
+      <img id="lastShot" class="shot" alt="마지막으로 보낸 사진">
+      <div class="hint" id="noShot">아직 보낸 사진이 없어요</div>
+    </section>
+
+  </div>
+
+  <div class="col">
+    <section class="card">
+      <div class="condbar">
+        <label for="condition" style="white-space:nowrap;font-size:14px">실험 조건</label>
+        <input type="text" id="condition" placeholder="예: 밝은 조명 / 어두운 조명 / 비슷한 물체 — 기록표에서 조건별로 묶어 보여 줘요">
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" data-tab="manual" aria-selected="true">수동 조종 (사람 판단)</button>
+        <button class="tab" role="tab" data-tab="vlm" aria-selected="false">VLM 판단</button>
+        <button class="tab" role="tab" data-tab="records" aria-selected="false">기록 <span id="recCount"></span></button>
+        <button class="tab" role="tab" data-tab="settings" aria-selected="false">설정 (강사용)</button>
+        <button class="tab" role="tab" data-tab="help" aria-selected="false">도움말</button>
+      </div>
+
+      <!-- 수동 조종 -->
+      <div class="panel active" id="panel-manual">
+        <p class="lead">카메라 화면을 보고 사람이 판단해서 명령을 보내요. 키보드 ← ↑ → 로도 보낼 수 있어요.</p>
+        <div class="pad">
+          <button data-cmd="L" title="L 보내기">◀<span>왼쪽 (L)</span></button>
+          <button data-cmd="C" title="C 보내기">●<span>가운데 (C)</span></button>
+          <button data-cmd="R" title="R 보내기">▶<span>오른쪽 (R)</span></button>
+        </div>
+        <label class="toggle"><input type="checkbox" id="recManual" checked> 수동 명령도 기록에 남기기</label>
+        <details>
+          <summary>직접 명령 보내기 (안전 장치 실험용)</summary>
+          <p class="hint">정해진 L·C·R 말고 다른 글자나 숫자를 보내 micro:bit 안전 장치가 무시하는지 확인할 때 써요.</p>
+          <div class="row">
+            <input type="text" id="rawCmd" placeholder="예: X, N, 170" style="flex:1">
+            <button class="btn" id="btnRaw">보내기</button>
+          </div>
+        </details>
+      </div>
+
+      <!-- VLM 판단 -->
+      <div class="panel" id="panel-vlm">
+        <p class="lead">사진을 찍어 VLM에게 물체의 위치를 묻고, 답(LEFT·CENTER·RIGHT·NONE)을 micro:bit 명령으로 바꿔 보내요.</p>
+        <div class="field">
+          <label for="target">찾을 물체</label>
+          <input type="text" id="target" value="빨간 컵">
+        </div>
+        <div class="row wrap">
+          <button class="btn primary big" id="btnAsk">찍고 묻기<kbd>Space</kbd></button>
+          <button class="btn" id="btnReask" title="방금 보낸 사진을 그대로 다시 물어봐요">같은 사진 다시 묻기</button>
+        </div>
+        <div class="row wrap" style="margin-top:10px">
+          <label class="toggle"><input type="checkbox" id="autoSend" checked> AI 답을 micro:bit로 보내기</label>
+        </div>
+
+        <div class="result hidden" id="result">
+          <div class="big" id="rBig">—</div>
+          <dl class="kv">
+            <dt>AI 원래 답</dt><dd id="rRaw">—</dd>
+            <dt>보낸 명령</dt><dd id="rSent">—</dd>
+            <dt>응답 시간</dt><dd id="rMs">—</dd>
+            <dt>질문 문장</dt><dd id="rPrompt" class="hint">—</dd>
+          </dl>
+          <div class="judge" id="judgeBox">
+            <span>이번 결과는?</span>
+            <button class="btn" data-v="O">맞음</button>
+            <button class="btn" data-v="X">틀림</button>
+          </div>
+        </div>
+
+        <details>
+          <summary>질문 문장 바꾸기 (고급)</summary>
+          <p class="hint">{물체} 자리에 '찾을 물체'가 들어가요. 문장을 바꾸면 AI 판단이 어떻게 달라지는지 실험할 수 있어요.</p>
+          <textarea id="prompt"></textarea>
+          <div class="row" style="margin-top:6px"><button class="btn" id="btnPromptReset">기본 문장으로</button></div>
+        </details>
+      </div>
+
+      <!-- 기록 -->
+      <div class="panel" id="panel-records">
+        <p class="lead">결과마다 맞음·틀림을 표시하면 방식·실험 조건별 성공률이 계산돼요.</p>
+        <h3>요약</h3>
+        <div class="tablebox" style="max-height:220px">
+          <table id="sumTable">
+            <thead><tr><th>방식</th><th>실험 조건</th><th>시도</th><th>판정</th><th>맞음</th><th>성공률</th><th>평균 응답</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <h3>전체 기록 (최근 순)</h3>
+        <div class="tablebox">
+          <table id="recTable">
+            <thead><tr><th>#</th><th>시각</th><th>방식</th><th>실험 조건</th><th>찾을 물체</th><th>AI 답</th><th>판단</th><th>보낸 명령</th><th>응답</th><th>판정</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="row wrap" style="margin-top:10px">
+          <button class="btn" id="btnCsv">CSV로 저장</button>
+          <button class="btn" id="btnCopyTsv">표 복사 (엑셀·한글에 붙여넣기)</button>
+          <button class="btn danger" id="btnClear">기록 지우기</button>
+        </div>
+      </div>
+
+      <!-- 설정 -->
+      <div class="panel" id="panel-settings">
+        <p class="lead">강사가 연수 전에 한 번 설정해요. 설정은 이 컴퓨터의 브라우저에만 저장돼요.</p>
+        <h3>VLM 연결 방식</h3>
+        <div class="row wrap" style="gap:16px;margin-bottom:10px">
+          <label class="toggle"><input type="radio" name="mode" value="proxy" checked> 중계 서버 (권장)</label>
+          <label class="toggle"><input type="radio" name="mode" value="direct"> API 키 직접 입력</label>
+        </div>
+
+        <div id="boxProxy">
+          <div class="note blue">API 키는 강사의 중계 서버에만 두고, 연수생 화면에는 서버 주소와 연수 코드만 들어가요.</div>
+          <div class="grid2">
+            <div class="field"><label for="proxyUrl">중계 서버 주소</label><input type="url" id="proxyUrl" placeholder="https://....workers.dev"></div>
+            <div class="field"><label for="classCode">연수 코드</label><input type="text" id="classCode" placeholder="강사가 정한 코드"></div>
+          </div>
+        </div>
+
+        <div id="boxDirect" class="hidden">
+          <div class="note">API 키를 브라우저에 직접 넣는 방식이에요. 화면을 본 사람은 키를 알아낼 수 있으니 강사 컴퓨터 시연용으로만 쓰고, 연수 뒤에는 키를 폐기하세요.</div>
+          <div class="grid2">
+            <div class="field"><label for="apiKey">Anthropic API 키</label><input type="password" id="apiKey" placeholder="sk-ant-..." autocomplete="off"></div>
+            <div class="field"><label for="model">모델</label><input type="text" id="model"></div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="saveKey"> 이 컴퓨터에 키 저장 (끄면 창을 닫을 때 지워짐)</label>
+        </div>
+
+        <h3>사용량·사진</h3>
+        <div class="grid2">
+          <div class="field"><label for="imgSize">보내는 사진 크기 (긴 변)</label>
+            <select id="imgSize"><option value="512">512px (빠름·저렴)</option><option value="768">768px (권장)</option><option value="1024">1024px (자세함)</option></select></div>
+          <div class="field"><label for="minInterval">호출 사이 최소 간격 (초)</label><input type="number" id="minInterval" min="0" max="60" step="1"></div>
+          <div class="field"><label for="maxCalls">이 컴퓨터 최대 호출 수</label><input type="number" id="maxCalls" min="1" max="10000" step="1"></div>
+          <div class="field"><label>지금까지 호출 수</label><div class="row"><b id="callsNow">0</b><button class="btn" id="btnResetCalls">0으로</button></div></div>
+        </div>
+
+        <div class="row wrap" style="margin-top:6px">
+          <button class="btn primary" id="btnSaveSettings">설정 저장</button>
+          <button class="btn" id="btnTest">연결 시험</button>
+          <span class="hint" id="testOut"></span>
+        </div>
+
+        <h3>연수생 배포 링크</h3>
+        <p class="hint">이 링크로 웹앱을 열면 중계 서버 주소와 연수 코드가 자동으로 들어가요. 웹앱을 https 주소에 올린 뒤에 쓰세요.</p>
+        <div class="row">
+          <input type="text" id="shareLink" readonly style="flex:1">
+          <button class="btn" id="btnCopyLink">복사</button>
+        </div>
+      </div>
+
+      <!-- 도움말 -->
+      <div class="panel" id="panel-help">
+        <h3>연수생 사용 순서</h3>
+        <ol class="steps">
+          <li>서보를 micro:bit P0에 연결하고, 강사가 나눠 준 hex 파일을 micro:bit에 내려받기</li>
+          <li>Chrome이나 Edge로 이 웹앱 열기</li>
+          <li>'micro:bit 연결' → 목록에서 micro:bit 선택 → 서보가 가운데(90°)로 오는지 확인</li>
+          <li>'카메라 켜기' → 권한 허용, 외장 웹캠이면 목록에서 고르기</li>
+          <li>수동 조종 탭에서 버튼으로 움직여 보고, VLM 판단 탭에서 '찍고 묻기'</li>
+          <li>결과마다 맞음·틀림 표시 → 기록 탭에서 성공률 확인</li>
+        </ol>
+
+        <h3>micro:bit 코드 (강사가 hex로 만들어 배포)</h3>
+        <p class="hint">MakeCode에서 새 프로젝트 → JavaScript 탭에 붙여 넣기 → 블록으로 확인 → 다운로드한 hex를 연수생에게 나눠 주세요. 웹앱은 L·C·R·N 글자 뒤에 줄바꿈을 붙여 보내요.</p>
+        <pre class="code" id="mbCode"></pre>
+        <div class="row"><button class="btn" id="btnCopyCode">코드 복사</button></div>
+
+        <h3>문제 해결</h3>
+        <ul>
+          <li><b>micro:bit가 목록에 안 보임</b>: 충전 전용이 아닌 데이터 케이블인지 확인, 케이블을 다시 꽂기</li>
+          <li><b>포트를 열 수 없음</b>: MakeCode 탭이 micro:bit에 연결돼 있으면 그 탭을 닫거나 연결을 끊고 다시 시도</li>
+          <li><b>서보가 반대로 돌아감</b>: 좌우 반전을 켜거나, micro:bit 코드에서 L·R 각도를 바꾸기</li>
+          <li><b>서보가 떨리거나 micro:bit가 다시 켜짐</b>: 3V 직결 대신 서보 확장보드 전원 사용</li>
+          <li><b>카메라가 안 켜짐</b>: 주소창 왼쪽 자물쇠 → 카메라 허용, 다른 프로그램이 카메라를 쓰는지 확인</li>
+        </ul>
+        <div class="note">VLM 판단 모드에서는 찍은 사진이 VLM 서버로 전송돼요. 얼굴·이름표가 찍히지 않게 물체만 화면에 두세요.</div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- 기본값 ----------
+  const DEFAULT_MODEL = "claude-haiku-5-5";
+  const DEFAULT_PROMPT = "사진에서 {물체}이(가) 어디에 있어? LEFT, CENTER, RIGHT, NONE 중 한 단어만 답해.";
+  const DEFAULTS = {
+    mode: "proxy", proxyUrl: "", classCode: "", model: DEFAULT_MODEL,
+    imgSize: 768, minInterval: 2, maxCalls: 100,
+    prompt: DEFAULT_PROMPT, mirror: false, autoSend: true, recManual: true,
+    target: "빨간 컵", condition: ""
+  };
+  const CMD = { LEFT: "L", CENTER: "C", RIGHT: "R", NONE: "N" };
+  const KO = { LEFT: "왼쪽", CENTER: "가운데", RIGHT: "오른쪽", NONE: "없음" };
+  const CMD_KO = { L: "왼쪽", C: "가운데", R: "오른쪽", N: "없음" };
+  const MICROBIT_CODE =
+`serial.onDataReceived(serial.delimiters(Delimiters.NewLine), function () {
+    let cmd = serial.readUntil(serial.delimiters(Delimiters.NewLine))
+    if (cmd == "L") {
+        pins.servoWritePin(AnalogPin.P0, 150)
+        basic.showArrow(ArrowNames.West)
+    } else if (cmd == "C") {
+        pins.servoWritePin(AnalogPin.P0, 90)
+        basic.showArrow(ArrowNames.North)
+    } else if (cmd == "R") {
+        pins.servoWritePin(AnalogPin.P0, 30)
+        basic.showArrow(ArrowNames.East)
+    } else if (cmd == "N") {
+        basic.showIcon(IconNames.No)
+    }
+    serial.writeLine("OK " + cmd)
+})
+pins.servoWritePin(AnalogPin.P0, 90)
+basic.showIcon(IconNames.Yes)`;
+
+  // ---------- 저장소 (실패해도 동작) ----------
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+    sget(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+    sset(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} },
+    sdel(k) { try { sessionStorage.removeItem(k); } catch (e) {} }
+  };
+
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
+  const hms = () => { const d = new Date(); return [d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, "0")).join(":"); };
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  let settings = Object.assign({}, DEFAULTS, store.get("pai.settings", {}));
+  let memKey = "";
+  let records = store.get("pai.records", []);
+  if (!Array.isArray(records)) records = [];
+  let calls = Number(store.get("pai.calls", 0)) || 0;
+
+  // ---------- 강사 배포 링크로 열었을 때 ----------
+  (function intakeQuery() {
+    const qp = new URLSearchParams(location.search);
+    let changed = false;
+    if (qp.get("proxy")) { settings.mode = "proxy"; settings.proxyUrl = qp.get("proxy"); changed = true; }
+    if (qp.get("code")) { settings.classCode = qp.get("code"); changed = true; }
+    if (changed) {
+      store.set("pai.settings", settings);
+      try { history.replaceState(null, "", location.pathname); } catch (e) {}
+      setTimeout(() => toast("강사 설정을 불러왔어요", "ok"), 300);
+    }
+  })();
+
+  // ---------- 알림 ----------
+  let toastTimer = null;
+  function toast(msg, kind) {
+    const t = $("#toast");
+    t.textContent = msg;
+    t.className = "toast show" + (kind ? " " + kind : "");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.className = "toast"; }, kind === "bad" ? 5000 : 2600);
+  }
+
+  function setChip(id, on, text, warn) {
+    const c = $(id);
+    c.classList.toggle("on", !!on);
+    c.classList.toggle("warn", !!warn);
+    c.querySelector("span:last-child").textContent = text;
+  }
+
+  function mbLog(text, cls) {
+    const box = $("#mbLog");
+    const line = document.createElement("div");
+    const time = hms();
+    line.className = cls || "sys";
+    line.textContent = time + "  " + text;
+    box.appendChild(line);
+    while (box.childNodes.length > 300) box.removeChild(box.firstChild);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  // ---------- micro:bit (웹 시리얼) ----------
+  let port = null, writer = null, reader = null, readDone = null;
+
+  function setSerialUI(on, info) {
+    $("#btnSerial").disabled = on;
+    $("#btnSerialOff").disabled = !on;
+    $("#serialInfo").textContent = on ? (info || "연결됨") : "연결 안 됨";
+    setChip("#chipMb", on, on ? "micro:bit 연결됨" : "micro:bit 미연결");
+  }
+
+  async function connectSerial() {
+    if (!("serial" in navigator)) {
+      toast("이 브라우저는 micro:bit 연결을 지원하지 않아요. Chrome이나 Edge로 열어 주세요.", "bad");
+      return;
+    }
+    try {
+      port = await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x0d28 }] });
+    } catch (e) {
+      if (e && e.name !== "NotFoundError") toast("연결을 시작할 수 없어요: " + e.message, "bad");
+      return;
+    }
+    try {
+      await port.open({ baudRate: 115200 });
+    } catch (e) {
+      toast("포트를 열 수 없어요. MakeCode 탭 등 다른 곳에서 micro:bit를 쓰고 있으면 닫고 다시 시도하세요.", "bad");
+      port = null;
+      return;
+    }
+    writer = port.writable.getWriter();
+    setSerialUI(true, "연결됨 (115200)");
+    mbLog("micro:bit 연결됨", "sys");
+    readLoop();
+  }
+
+  async function readLoop() {
+    const decoder = new TextDecoderStream();
+    readDone = port.readable.pipeTo(decoder.writable).catch(() => {});
+    reader = decoder.readable.getReader();
+    let buf = "";
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += value;
+        let i;
+        while ((i = buf.indexOf("\n")) >= 0) {
+          const line = buf.slice(0, i).replace(/\r$/, "");
+          buf = buf.slice(i + 1);
+          if (line.trim()) mbLog("← " + line, "in");
+        }
+        if (buf.length > 2000) buf = "";
+      }
+    } catch (e) {
+      // 케이블이 빠지면 여기로 옴
+    } finally {
+      try { reader.releaseLock(); } catch (e) {}
+    }
+  }
+
+  async function disconnectSerial(silent) {
+    const p = port;
+    try { if (reader) await reader.cancel(); } catch (e) {}
+    try { if (readDone) await readDone; } catch (e) {}
+    try { if (writer) writer.releaseLock(); } catch (e) {}
+    try { if (p) await p.close(); } catch (e) {}
+    port = null; writer = null; reader = null; readDone = null;
+    setSerialUI(false);
+    if (!silent) mbLog("micro:bit 연결 끊음", "sys");
+  }
+
+  if ("serial" in navigator) {
+    navigator.serial.addEventListener("disconnect", (e) => {
+      if (port && e.target === port) {
+        disconnectSerial(true);
+        mbLog("micro:bit 연결이 끊겼어요 (케이블 확인)", "sys");
+        toast("micro:bit 연결이 끊겼어요", "warn");
+      }
+    });
+  }
+
+  async function sendCmd(cmd) {
+    if (!writer) { toast("먼저 'micro:bit 연결'을 누르세요", "warn"); return false; }
+    try {
+      await writer.write(new TextEncoder().encode(cmd + "\n"));
+      mbLog("→ " + cmd, "out");
+      return true;
+    } catch (e) {
+      toast("보내기 실패: " + e.message, "bad");
+      return false;
+    }
+  }
+
+  // ---------- 카메라 ----------
+  const video = $("#video");
+  let stream = null;
+
+  function setCamUI(on) {
+    $("#camPlaceholder").classList.toggle("hidden", on);
+    $("#btnCam").textContent = on ? "카메라 끄기" : "카메라 켜기";
+    $("#camSelect").classList.toggle("hidden", !on);
+    setChip("#chipCam", on, on ? "카메라 켜짐" : "카메라 꺼짐");
+  }
+
+  function stopCamera() {
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    stream = null;
+    video.srcObject = null;
+    setCamUI(false);
+  }
+
+  async function startCamera(deviceId) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast("이 환경에서는 카메라를 쓸 수 없어요. https 주소에서 Chrome·Edge로 열어 주세요.", "bad");
+      return;
+    }
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    const video_c = { width: { ideal: 1280 }, height: { ideal: 720 } };
+    if (deviceId) video_c.deviceId = { exact: deviceId };
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: video_c, audio: false });
+    } catch (e) {
+      stream = null;
+      setCamUI(false);
+      toast("카메라를 켤 수 없어요. 권한 허용과 다른 프로그램 사용 여부를 확인하세요.", "bad");
+      return;
+    }
+    video.srcObject = stream;
+    try { await video.play(); } catch (e) {}
+    setCamUI(true);
+    applyMirror();
+    const cur = stream.getVideoTracks()[0]?.getSettings()?.deviceId;
+    await listCameras(cur);
+  }
+
+  async function listCameras(currentId) {
+    try {
+      const devs = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput");
+      $("#camSelect").innerHTML = devs.map((d, i) =>
+        `<option value="${esc(d.deviceId)}"${d.deviceId === currentId ? " selected" : ""}>${esc(d.label || "카메라 " + (i + 1))}</option>`
+      ).join("");
+    } catch (e) {}
+  }
+
+  function applyMirror() {
+    video.style.transform = settings.mirror ? "scaleX(-1)" : "none";
+  }
+
+  function capture() {
+    if (!stream || !video.videoWidth) { toast("먼저 '카메라 켜기'를 누르세요", "warn"); return null; }
+    const vw = video.videoWidth, vh = video.videoHeight;
+    const s = Math.min(1, Number(settings.imgSize) / Math.max(vw, vh));
+    const w = Math.round(vw * s), h = Math.round(vh * s);
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    const ctx = c.getContext("2d");
+    if (settings.mirror) { ctx.translate(w, 0); ctx.scale(-1, 1); }
+    ctx.drawImage(video, 0, 0, w, h);
+    const dataUrl = c.toDataURL("image/jpeg", 0.8);
+    return { dataUrl, b64: dataUrl.split(",")[1] };
+  }
+
+  function showLastShot(dataUrl) {
+    const img = $("#lastShot");
+    img.src = dataUrl;
+    img.style.display = "block";
+    $("#noShot").classList.add("hidden");
+  }
+
+  // ---------- VLM ----------
+  function getApiKey() {
+    return memKey || store.sget("pai.apikey") || store.get("pai.apikey", "");
+  }
+
+  function vlmReady() {
+    if (settings.mode === "proxy") return !!settings.proxyUrl;
+    return !!getApiKey();
+  }
+
+  function buildPrompt(target) {
+    const tpl = (settings.prompt || DEFAULT_PROMPT);
+    return tpl.split("{물체}").join(target);
+  }
+
+  async function askVLM(b64, prompt) {
+    if (settings.mode === "proxy") {
+      if (!settings.proxyUrl) throw new Error("설정 탭에서 중계 서버 주소를 넣어 주세요");
+      const r = await fetch(settings.proxyUrl, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-class-code": settings.classCode || "" },
+        body: JSON.stringify({ image: b64, prompt })
+      });
+      let data = {};
+      try { data = await r.json(); } catch (e) {}
+      if (!r.ok) throw new Error(data.error || ("중계 서버 오류 " + r.status));
+      return String(data.text || "");
+    }
+    const key = getApiKey();
+    if (!key) throw new Error("설정 탭에서 API 키를 넣어 주세요");
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: settings.model || DEFAULT_MODEL,
+        max_tokens: 20,
+        messages: [{
+          role: "user",
+          content: [
+            { type: "image", source: { type: "base64", media_type: "image/jpeg", data: b64 } },
+            { type: "text", text: prompt }
+          ]
+        }]
+      })
+    });
+    let data = {};
+    try { data = await r.json(); } catch (e) {}
+    if (!r.ok) throw new Error((data.error && data.error.message) || ("API 오류 " + r.status));
+    return (data.content || []).filter((c) => c.type === "text").map((c) => c.text).join("");
+  }
+
+  // 답에서 LEFT/CENTER/RIGHT/NONE 중 정확히 하나를 찾음. 둘 이상이거나 없으면 판단 불가(null).
+  function parseAnswer(text) {
+    const up = String(text || "").toUpperCase();
+    const words = ["LEFT", "CENTER", "RIGHT", "NONE"];
+    let hits = words.filter((w) => new RegExp("(^|[^A-Z])" + w + "([^A-Z]|$)").test(up));
+    if (hits.length === 0) {
+      const ko = { "왼쪽": "LEFT", "가운데": "CENTER", "오른쪽": "RIGHT", "없": "NONE" };
+      hits = Object.keys(ko).filter((k) => up.includes(k)).map((k) => ko[k]);
+    }
+    return hits.length === 1 ? hits[0] : null;
+  }
+
+  let busy = false, lastCallAt = 0, lastShot = null, lastRecId = null;
+
+  function setAskUI(on) {
+    const b = $("#btnAsk");
+    b.disabled = on;
+    $("#btnReask").disabled = on;
+    b.innerHTML = on ? '<span class="spinner"></span>묻는 중…' : '찍고 묻기<kbd>Space</kbd>';
+  }
+
+  async function doAsk(reuse) {
+    if (busy) return;
+    if (!vlmReady()) { toast("VLM 연결이 설정되지 않았어요. 강사에게 문의하세요.", "warn"); return; }
+    const waitMs = Number(settings.minInterval) * 1000 - (Date.now() - lastCallAt);
+    if (waitMs > 0) { toast(Math.ceil(waitMs / 1000) + "초 뒤에 다시 물어볼 수 있어요", "warn"); return; }
+    if (calls >= Number(settings.maxCalls)) { toast("이 컴퓨터의 최대 호출 수에 도달했어요. 강사에게 문의하세요.", "bad"); return; }
+    const target = $("#target").value.trim();
+    if (!target) { toast("찾을 물체를 입력하세요", "warn"); return; }
+    let shot;
+    if (reuse) {
+      if (!lastShot) { toast("아직 찍은 사진이 없어요", "warn"); return; }
+      shot = lastShot;
+    } else {
+      shot = capture();
+      if (!shot) return;
+    }
+    lastShot = shot;
+    showLastShot(shot.dataUrl);
+    const prompt = buildPrompt(target);
+
+    busy = true; setAskUI(true);
+    lastCallAt = Date.now();
+    calls += 1; store.set("pai.calls", calls); renderCalls();
+    const t0 = performance.now();
+    let text = "", err = null;
+    try { text = await askVLM(shot.b64, prompt); } catch (e) { err = e; }
+    const ms = Math.round(performance.now() - t0);
+    busy = false; setAskUI(false);
+
+    if (err) {
+      const msg = err.message === "Failed to fetch" ? "서버에 닿지 못했어요 (인터넷·주소 확인)" : err.message;
+      showResult({ error: msg, ms, prompt });
+      lastRecId = addRecord({ mode: "VLM", target, answer: "(오류) " + msg, decision: "", sent: "", latency: ms, reuse });
+      return;
+    }
+    const dec = parseAnswer(text);
+    let sent = "";
+    if (dec && $("#autoSend").checked) {
+      if (await sendCmd(CMD[dec])) sent = CMD[dec];
+    }
+    showResult({ text, dec, sent, ms, prompt, reuse });
+    lastRecId = addRecord({ mode: "VLM", target, answer: text.trim(), decision: dec ? dec : "판단 불가", sent, latency: ms, reuse });
+  }
+
+  function showResult(r) {
+    const box = $("#result");
+    box.classList.remove("hidden");
+    box.classList.toggle("err", !!r.error);
+    $$("#judgeBox .btn").forEach((b) => b.classList.remove("sel-O", "sel-X"));
+    if (r.error) {
+      $("#rBig").textContent = "오류";
+      $("#rRaw").textContent = r.error;
+      $("#rSent").textContent = "보내지 않음";
+    } else {
+      $("#rBig").textContent = r.dec ? `${r.dec} · ${KO[r.dec]}` : "판단 불가";
+      $("#rRaw").textContent = r.text.trim() || "(빈 답)";
+      $("#rSent").textContent = r.sent ? `${r.sent} (${CMD_KO[r.sent]})` :
+        (!r.dec ? "보내지 않음 (답이 하나로 정해지지 않음)" : ($("#autoSend").checked ? "보내지 못함 (micro:bit 연결 확인)" : "보내지 않음 (보내기 꺼짐)"));
+    }
+    $("#rMs").textContent = (r.ms / 1000).toFixed(2) + "초" + (r.reuse ? " · 같은 사진 다시 물음" : "");
+    $("#rPrompt").textContent = r.prompt;
+  }
+
+  // ---------- 기록 ----------
+  function saveRecords() { store.set("pai.records", records); }
+
+  function addRecord(r) {
+    const id = (records.reduce((m, x) => Math.max(m, x.id || 0), 0)) + 1;
+    const rec = Object.assign({
+      id,
+      time: hms(),
+      cond: $("#condition").value.trim(),
+      verdict: ""
+    }, r);
+    records.push(rec);
+    saveRecords();
+    renderRecords();
+    return id;
+  }
+
+  function setVerdict(id, v) {
+    const rec = records.find((x) => x.id === id);
+    if (!rec) return;
+    rec.verdict = v;
+    saveRecords();
+    renderRecords();
+  }
+
+  function decisionText(rec) {
+    if (rec.mode === "사람") return rec.sent ? CMD_KO[rec.sent] || rec.sent : "";
+    if (KO[rec.decision]) return rec.decision + " (" + KO[rec.decision] + ")";
+    return rec.decision || "";
+  }
+
+  function renderRecords() {
+    $("#recCount").textContent = records.length ? "(" + records.length + ")" : "";
+    const tb = $("#recTable tbody");
+    tb.innerHTML = records.slice().reverse().map((r) => `
+      <tr>
+        <td>${r.id}</td><td>${esc(r.time)}</td><td>${esc(r.mode)}${r.reuse ? " ↻" : ""}</td>
+        <td>${esc(r.cond || "—")}</td><td>${esc(r.target || "")}</td>
+        <td>${esc(r.answer || "")}</td><td>${esc(decisionText(r))}</td><td>${esc(r.sent || "")}</td>
+        <td>${r.latency !== "" && r.latency != null ? (r.latency / 1000).toFixed(2) + "초" : ""}</td>
+        <td class="v-${esc(r.verdict)}">
+          <select data-id="${r.id}" class="verdictSel">
+            <option value=""${!r.verdict ? " selected" : ""}>—</option>
+            <option value="O"${r.verdict === "O" ? " selected" : ""}>맞음</option>
+            <option value="X"${r.verdict === "X" ? " selected" : ""}>틀림</option>
+          </select>
+        </td>
+      </tr>`).join("") || `<tr><td colspan="10" class="hint">아직 기록이 없어요</td></tr>`;
+
+    // 방식 × 실험 조건별 요약
+    const groups = new Map();
+    records.forEach((r) => {
+      const key = r.mode + "\u0000" + (r.cond || "");
+      if (!groups.has(key)) groups.set(key, { mode: r.mode, cond: r.cond || "", n: 0, judged: 0, ok: 0, msSum: 0, msN: 0 });
+      const g = groups.get(key);
+      g.n++;
+      if (r.verdict === "O" || r.verdict === "X") g.judged++;
+      if (r.verdict === "O") g.ok++;
+      if (r.mode === "VLM" && typeof r.latency === "number" && !String(r.answer).startsWith("(오류)")) { g.msSum += r.latency; g.msN++; }
+    });
+    $("#sumTable tbody").innerHTML = Array.from(groups.values()).map((g) => `
+      <tr><td>${esc(g.mode)}</td><td>${esc(g.cond || "—")}</td><td>${g.n}</td><td>${g.judged}</td><td>${g.ok}</td>
+      <td>${g.judged ? Math.round((g.ok / g.judged) * 100) + "%" : "—"}</td>
+      <td>${g.msN ? (g.msSum / g.msN / 1000).toFixed(2) + "초" : "—"}</td></tr>`).join("")
+      || `<tr><td colspan="7" class="hint">아직 기록이 없어요</td></tr>`;
+  }
+
+  function recordsAsRows() {
+    const head = ["번호", "시각", "방식", "실험 조건", "찾을 물체", "AI 답", "판단", "보낸 명령", "응답 시간(초)", "판정"];
+    const rows = records.map((r) => [
+      r.id, r.time, r.mode + (r.reuse ? "(같은 사진)" : ""), r.cond || "", r.target || "", r.answer || "",
+      decisionText(r), r.sent || "",
+      (typeof r.latency === "number") ? (r.latency / 1000).toFixed(2) : "",
+      r.verdict === "O" ? "맞음" : r.verdict === "X" ? "틀림" : ""
+    ]);
+    return [head].concat(rows);
+  }
+
+  function downloadCsv() {
+    if (!records.length) { toast("저장할 기록이 없어요", "warn"); return; }
+    const csv = recordsAsRows().map((row) => row.map((v) => {
+      const s = String(v);
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }).join(",")).join("\r\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    const d = new Date();
+    a.href = URL.createObjectURL(blob);
+    a.download = `피지컬AI_실습기록_${d.getMonth() + 1}월${d.getDate()}일_${d.getHours()}시${d.getMinutes()}분.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+
+  async function copyText(text, okMsg) {
+    try { await navigator.clipboard.writeText(text); toast(okMsg || "복사했어요", "ok"); }
+    catch (e) { toast("복사하지 못했어요. 직접 선택해서 복사해 주세요.", "warn"); }
+  }
+
+  // ---------- 설정 ----------
+  function fillSettingsForm() {
+    $$('input[name=mode]').forEach((r) => { r.checked = r.value === settings.mode; });
+    $("#proxyUrl").value = settings.proxyUrl || "";
+    $("#classCode").value = settings.classCode || "";
+    $("#model").value = settings.model || DEFAULT_MODEL;
+    $("#imgSize").value = String(settings.imgSize);
+    $("#minInterval").value = settings.minInterval;
+    $("#maxCalls").value = settings.maxCalls;
+    const savedKey = store.get("pai.apikey", "");
+    $("#saveKey").checked = !!savedKey;
+    $("#apiKey").value = getApiKey() ? "••••••••" : "";
+    $("#prompt").value = settings.prompt || DEFAULT_PROMPT;
+    $("#mirror").checked = !!settings.mirror;
+    $("#autoSend").checked = settings.autoSend !== false;
+    $("#recManual").checked = settings.recManual !== false;
+    $("#target").value = settings.target || DEFAULTS.target;
+    $("#condition").value = settings.condition || "";
+    toggleModeBoxes();
+    renderShareLink();
+  }
+
+  function toggleModeBoxes() {
+    const mode = ($('input[name=mode]:checked') || {}).value || "proxy";
+    $("#boxProxy").classList.toggle("hidden", mode !== "proxy");
+    $("#boxDirect").classList.toggle("hidden", mode !== "direct");
+  }
+
+  function readSettingsForm() {
+    settings.mode = ($('input[name=mode]:checked') || {}).value || "proxy";
+    settings.proxyUrl = $("#proxyUrl").value.trim();
+    settings.classCode = $("#classCode").value.trim();
+    settings.model = $("#model").value.trim() || DEFAULT_MODEL;
+    settings.imgSize = Number($("#imgSize").value) || 768;
+    settings.minInterval = Math.max(0, Number($("#minInterval").value) || 0);
+    settings.maxCalls = Math.max(1, Number($("#maxCalls").value) || DEFAULTS.maxCalls);
+    const k = $("#apiKey").value.trim();
+    if (k && k !== "••••••••") {
+      memKey = k;
+      if ($("#saveKey").checked) { store.set("pai.apikey", k); store.sdel("pai.apikey"); }
+      else { store.del("pai.apikey"); store.sset("pai.apikey", k); }
+    } else if (!k) {
+      memKey = ""; store.del("pai.apikey"); store.sdel("pai.apikey");
+    } else if (k === "••••••••") {
+      const cur = getApiKey();
+      if ($("#saveKey").checked) { store.set("pai.apikey", cur); }
+      else { store.del("pai.apikey"); if (cur) store.sset("pai.apikey", cur); }
+    }
+  }
+
+  function saveSettings(silent) {
+    store.set("pai.settings", settings);
+    renderVlmChip();
+    renderShareLink();
+    if (!silent) toast("설정을 저장했어요", "ok");
+  }
+
+  function renderVlmChip() {
+    if (settings.mode === "proxy") {
+      setChip("#chipVlm", !!settings.proxyUrl, settings.proxyUrl ? "VLM: 중계 서버" : "VLM 미설정");
+    } else {
+      const ok = !!getApiKey();
+      setChip("#chipVlm", ok, ok ? "VLM: API 키 직접" : "VLM 미설정", ok);
+    }
+  }
+
+  function renderCalls() {
+    $("#callsNow").textContent = calls;
+    const near = calls >= Number(settings.maxCalls) * 0.8;
+    setChip("#chipCalls", true, `호출 ${calls}/${settings.maxCalls}`, near);
+  }
+
+  function renderShareLink() {
+    const base = location.origin && location.origin !== "null" ? location.origin + location.pathname : "";
+    if (!base || !location.protocol.startsWith("http")) {
+      $("#shareLink").value = "웹앱을 https 주소에 올리면 여기에 배포 링크가 만들어져요";
+      return;
+    }
+    if (!settings.proxyUrl) { $("#shareLink").value = "중계 서버 주소를 넣고 저장하면 링크가 만들어져요"; return; }
+    const q = new URLSearchParams({ proxy: settings.proxyUrl });
+    if (settings.classCode) q.set("code", settings.classCode);
+    $("#shareLink").value = base + "?" + q.toString();
+  }
+
+  async function testConnection() {
+    readSettingsForm(); saveSettings(true);
+    const out = $("#testOut");
+    if (!vlmReady()) { out.textContent = "연결 정보를 먼저 넣어 주세요"; return; }
+    out.textContent = "시험 중…";
+    const c = document.createElement("canvas");
+    c.width = 64; c.height = 64;
+    const ctx = c.getContext("2d");
+    ctx.fillStyle = "#d22"; ctx.fillRect(0, 0, 64, 64);
+    const b64 = c.toDataURL("image/jpeg", 0.8).split(",")[1];
+    const t0 = performance.now();
+    try {
+      const text = await askVLM(b64, "이 사진의 색을 한 단어로 답해.");
+      calls += 1; store.set("pai.calls", calls); renderCalls();
+      out.textContent = `성공 · 답: "${text.trim()}" · ${((performance.now() - t0) / 1000).toFixed(2)}초`;
+    } catch (e) {
+      const msg = e.message === "Failed to fetch" ? "서버에 닿지 못했어요 (주소·인터넷 확인)" : e.message;
+      out.textContent = "실패 · " + msg;
+    }
+  }
+
+  // ---------- 탭 ----------
+  let activeTab = "manual";
+  function showTab(name) {
+    activeTab = name;
+    $$(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
+    $$(".panel").forEach((p) => p.classList.toggle("active", p.id === "panel-" + name));
+  }
+
+  // ---------- 이벤트 연결 ----------
+  $$(".tab").forEach((t) => t.addEventListener("click", () => showTab(t.dataset.tab)));
+
+  $("#btnSerial").addEventListener("click", connectSerial);
+  $("#btnSerialOff").addEventListener("click", () => disconnectSerial(false));
+  $("#btnCam").addEventListener("click", () => (stream ? stopCamera() : startCamera()));
+  $("#camSelect").addEventListener("change", (e) => startCamera(e.target.value));
+  $("#mirror").addEventListener("change", (e) => { settings.mirror = e.target.checked; applyMirror(); saveSettings(true); });
+
+  async function manualSend(cmd, btn) {
+    if (btn) { btn.classList.add("flash"); setTimeout(() => btn.classList.remove("flash"), 200); }
+    const ok = await sendCmd(cmd);
+    if (ok && $("#recManual").checked) {
+      addRecord({ mode: "사람", target: "", answer: "", decision: "", sent: cmd, latency: "" });
+    }
+  }
+  $$(".pad button").forEach((b) => b.addEventListener("click", () => manualSend(b.dataset.cmd, b)));
+  $("#btnRaw").addEventListener("click", async () => {
+    const v = $("#rawCmd").value.trim();
+    if (!v) return;
+    const ok = await sendCmd(v);
+    if (ok && $("#recManual").checked) addRecord({ mode: "사람", target: "", answer: "직접 입력", decision: "", sent: v, latency: "" });
+  });
+  $("#recManual").addEventListener("change", (e) => { settings.recManual = e.target.checked; saveSettings(true); });
+
+  $("#btnAsk").addEventListener("click", () => doAsk(false));
+  $("#btnReask").addEventListener("click", () => doAsk(true));
+  $("#autoSend").addEventListener("change", (e) => { settings.autoSend = e.target.checked; saveSettings(true); });
+  $("#target").addEventListener("change", (e) => { settings.target = e.target.value; saveSettings(true); });
+  $("#condition").addEventListener("change", (e) => { settings.condition = e.target.value; saveSettings(true); });
+  $("#prompt").addEventListener("change", (e) => {
+    const v = e.target.value.trim();
+    if (v && !v.includes("{물체}")) toast("문장에 {물체}가 없으면 찾을 물체가 들어가지 않아요", "warn");
+    settings.prompt = v || DEFAULT_PROMPT; saveSettings(true);
+  });
+  $("#btnPromptReset").addEventListener("click", () => { settings.prompt = DEFAULT_PROMPT; $("#prompt").value = DEFAULT_PROMPT; saveSettings(true); toast("기본 문장으로 돌렸어요"); });
+
+  $$("#judgeBox .btn").forEach((b) => b.addEventListener("click", () => {
+    if (lastRecId == null) return;
+    setVerdict(lastRecId, b.dataset.v);
+    $$("#judgeBox .btn").forEach((x) => x.classList.remove("sel-O", "sel-X"));
+    b.classList.add("sel-" + b.dataset.v);
+  }));
+
+  $("#recTable").addEventListener("change", (e) => {
+    if (e.target.classList.contains("verdictSel")) setVerdict(Number(e.target.dataset.id), e.target.value);
+  });
+  $("#btnCsv").addEventListener("click", downloadCsv);
+  $("#btnCopyTsv").addEventListener("click", () => {
+    if (!records.length) { toast("복사할 기록이 없어요", "warn"); return; }
+    copyText(recordsAsRows().map((r) => r.map((v) => String(v).replace(/[\t\n]/g, " ")).join("\t")).join("\n"), "표를 복사했어요");
+  });
+  $("#btnClear").addEventListener("click", () => {
+    if (!records.length) return;
+    if (!window.confirm("기록 " + records.length + "개를 모두 지울까요? 지우기 전에 CSV로 저장해 두세요.")) return;
+    records = []; lastRecId = null; saveRecords(); renderRecords(); toast("기록을 지웠어요");
+  });
+
+  $$('input[name=mode]').forEach((r) => r.addEventListener("change", toggleModeBoxes));
+  $("#btnSaveSettings").addEventListener("click", () => { readSettingsForm(); saveSettings(false); fillSettingsForm(); renderCalls(); });
+  $("#btnTest").addEventListener("click", testConnection);
+  $("#btnResetCalls").addEventListener("click", () => { calls = 0; store.set("pai.calls", 0); renderCalls(); });
+  $("#btnCopyLink").addEventListener("click", () => {
+    const v = $("#shareLink").value;
+    if (!v.startsWith("http")) { toast("아직 만들 수 있는 링크가 없어요", "warn"); return; }
+    copyText(v, "배포 링크를 복사했어요");
+  });
+  $("#btnCopyCode").addEventListener("click", () => copyText(MICROBIT_CODE, "micro:bit 코드를 복사했어요"));
+
+  document.addEventListener("keydown", (e) => {
+    const tag = (e.target.tagName || "").toLowerCase();
+    if (["input", "textarea", "select"].includes(tag) || e.isComposing) return;
+    if (activeTab === "manual") {
+      const map = { ArrowLeft: "L", ArrowUp: "C", ArrowRight: "R" };
+      if (map[e.key]) {
+        e.preventDefault();
+        manualSend(map[e.key], $(`.pad button[data-cmd="${map[e.key]}"]`));
+      }
+    } else if (activeTab === "vlm" && (e.code === "Space" || e.key === " ")) {
+      e.preventDefault();
+      doAsk(false);
+    }
+  });
+
+  window.addEventListener("beforeunload", () => { if (port) { try { port.close(); } catch (e) {} } });
+
+  // ---------- 시작 ----------
+  $("#mbCode").textContent = MICROBIT_CODE;
+  fillSettingsForm();
+  applyMirror();
+  renderRecords();
+  renderVlmChip();
+  renderCalls();
+  if (!("serial" in navigator)) {
+    mbLog("이 브라우저는 micro:bit 연결(웹 시리얼)을 지원하지 않아요. Chrome·Edge로 열어 주세요.", "sys");
+  } else {
+    mbLog("'micro:bit 연결'을 눌러 시작하세요", "sys");
+  }
+
+  // 테스트용으로 바깥에서 쓸 수 있게 노출
+  window.__pai = { parseAnswer, buildPrompt };
+})();
+</script>
+</body>
+</html>
