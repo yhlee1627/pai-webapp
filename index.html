@@ -295,8 +295,8 @@
           <li>결과마다 맞음·틀림 표시 → 기록 탭에서 성공률 확인</li>
         </ol>
 
-        <h3>micro:bit 코드 (강사가 hex로 만들어 배포)</h3>
-        <p class="hint">MakeCode에서 새 프로젝트 → JavaScript 탭에 붙여 넣기 → 블록으로 확인 → 다운로드한 hex를 연수생에게 나눠 주세요. 웹앱은 L·C·R·N 글자 뒤에 줄바꿈을 붙여 보내요.</p>
+        <h3>micro:bit 코드</h3>
+        <p class="hint">같은 코드를 hex 파일로도 제공해요: 심화1_웹앱연결_서보.hex (기본), 심화4_안전장치_완성본.hex (안전 장치). hex를 micro:bit 드라이브에 끌어다 놓으면 되고, MakeCode에 끌어다 놓으면 블록으로 열려요. 웹앱은 L·C·R·N 글자 뒤에 줄바꿈을 붙여 보내요.</p>
         <pre class="code" id="mbCode"></pre>
         <div class="row"><button class="btn" id="btnCopyCode">코드 복사</button></div>
 
@@ -623,6 +623,8 @@ basic.showIcon(IconNames.Yes)`;
       body: JSON.stringify({
         model: settings.model || DEFAULT_MODEL,
         max_tokens: 20,
+        thinking: { type: "disabled" }, // Haiku 5.5는 기본으로 생각부터 해서 20토큰을 다 씀 → 생각 끄기
+        output_config: { effort: "low" },
         messages: [{
           role: "user",
           content: [
@@ -635,7 +637,13 @@ basic.showIcon(IconNames.Yes)`;
     let data = {};
     try { data = await r.json(); } catch (e) {}
     if (!r.ok) throw new Error((data.error && data.error.message) || ("API 오류 " + r.status));
-    return (data.content || []).filter((c) => c.type === "text").map((c) => c.text).join("");
+    const text = (data.content || []).filter((c) => c.type === "text").map((c) => c.text).join("");
+    if (!text) {
+      throw new Error(data.stop_reason === "refusal"
+        ? "VLM이 이 요청에는 답하지 않았어요"
+        : "VLM 답이 비어 있어요 (stop_reason: " + (data.stop_reason || "알 수 없음") + ")");
+    }
+    return text;
   }
 
   // 답에서 LEFT/CENTER/RIGHT/NONE 중 정확히 하나를 찾음. 둘 이상이거나 없으면 판단 불가(null).
