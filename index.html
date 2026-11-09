@@ -230,14 +230,23 @@
   .unlockCard h2{margin-bottom:4px}
   .unlockCard input{width:100%;margin-top:8px}
   .unlockCard .row{justify-content:flex-end;margin-top:6px}
+
+  /* 실험 조건: 적혀 있으면 눈에 띄게, × 로 비우기 */
+  .hdrCond.set{background:#fff1cc;box-shadow:0 0 0 1px #e9c46a inset}
+  .hdrCond.set label{color:#8a5a00}
+  .hdrCond.set input{border-color:#e0b04a}
+  .hdrCond .clr{border:none;background:none;color:#8a5a00;font-size:16px;line-height:1;padding:2px 6px;cursor:pointer;border-radius:6px}
+  .hdrCond .clr:hover{background:#f6dfa6}
+  .hdrCond:not(.set) .clr{display:none}
 </style>
 </head>
 <body class="learner">
 <header>
   <h1>피지컬 AI 실습 웹앱<small>micro:bit 분류 로봇 · 같은 몸, 다른 두뇌</small></h1>
-  <div class="hdrCond" title="지금 시험하는 조건을 적어 두면 기록 탭에서 조건별 성공률로 묶어 보여 줘요">
+  <div class="hdrCond" title="지금 시험하는 조건을 적어 두면 그 뒤 기록에 붙고, 기록 탭에서 조건별 성공률로 묶어 보여 줘요. 이 창을 닫으면 비워져요">
     <label for="condition">실험 조건</label>
     <input type="text" id="condition" placeholder="예: 처음 보는 물건, 조명 변경">
+    <button class="clr" id="btnCondClear" title="실험 조건 비우기">×</button>
   </div>
   <div class="chips">
     <span class="chip" id="chipMb"><span class="dot"></span><span>micro:bit 미연결</span></span>
@@ -551,7 +560,7 @@
 
       <!-- 기록 -->
       <div class="panel" id="panel-records">
-        <p class="lead">결과마다 맞음·틀림을 표시하면 두뇌(방식)·실험 조건별 성공률이 계산돼요.</p>
+        <p class="lead">결과마다 맞음·틀림을 표시하면 두뇌(방식)·실험 조건별 성공률이 계산돼요. 실험 조건은 결과가 나올 때 위쪽 칸에 적힌 것이 붙고, 이 창을 닫으면 칸이 비워져요.</p>
         <h3>요약</h3>
         <div class="tablebox" style="max-height:240px">
           <table id="sumTable">
@@ -2113,7 +2122,8 @@ basic.showIcon(IconNames.Yes)`;
     $("#apiKey").value = getApiKey() ? "••••••••" : "";
     $("#mirror").checked = !!settings.mirror;
     $("#recManual").checked = settings.recManual !== false;
-    $("#condition").value = settings.condition || "";
+    $("#condition").value = store.sget("pai.condition") || "";
+    $(".hdrCond").classList.toggle("set", !!$("#condition").value.trim());
     $("#autoReturn").checked = settings.autoReturn !== false;
     $("#returnDelay").value = String(settings.returnDelay);
     $("#ruleMin").value = settings.ruleMin;
@@ -2241,7 +2251,17 @@ basic.showIcon(IconNames.Yes)`;
   $("#mirror").addEventListener("change", (e) => { settings.mirror = e.target.checked; applyMirror(); saveSettings(true); });
   $("#autoReturn").addEventListener("change", (e) => { settings.autoReturn = e.target.checked; saveSettings(true); });
   $("#returnDelay").addEventListener("change", (e) => { settings.returnDelay = Number(e.target.value) || 1.5; saveSettings(true); });
-  $("#condition").addEventListener("change", (e) => { settings.condition = e.target.value; saveSettings(true); });
+  const syncCond = () => {
+    const v = $("#condition").value;
+    if (v.trim()) store.sset("pai.condition", v); else store.sdel("pai.condition");
+    $(".hdrCond").classList.toggle("set", !!v.trim());
+  };
+  $("#condition").addEventListener("input", syncCond);
+  $("#condition").addEventListener("change", syncCond);
+  $("#btnCondClear").addEventListener("click", () => {
+    $("#condition").value = ""; syncCond();
+    toast("실험 조건을 비웠어요 — 다음 기록부터 조건 없이 남아요", "ok");
+  });
   $$(".autoSendCb").forEach((c) => c.addEventListener("change", (e) => { settings.autoSend = e.target.checked; syncAutoSend(); saveSettings(true); }));
 
   // 사람
@@ -2550,6 +2570,7 @@ basic.showIcon(IconNames.Yes)`;
   $("#aiShot").addEventListener("click", (e) => { if (e.target.id !== "aiShotX") $("#aiShot").classList.toggle("big"); });
   $("#aiShotX").addEventListener("click", () => { $("#aiShot").classList.add("hidden"); $("#aiShot").classList.remove("big"); });
   renderMbCodes();
+  if (settings.condition) { settings.condition = ""; store.set("pai.settings", settings); }
   fillSettingsForm();
   renderSwatches();
   applyMirror();
