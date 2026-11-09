@@ -108,10 +108,13 @@
   .sw.sel{box-shadow:0 0 0 3px var(--accent)}
   .swatches input[type=color]{width:36px;height:32px;padding:0 2px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer}
   .counts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 12px}
+  .ruleSentence{background:var(--accent-soft);border-radius:10px;padding:10px 14px;margin:0 0 14px;font-size:15.5px;line-height:1.9}
+  .ruleSentence .kw{color:var(--sub);font-weight:600;margin-right:4px}
+  .ruleSentence .dot{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:-2px;margin-right:4px;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
   @media (max-width:600px){.counts{grid-template-columns:1fr}}
   .cnt{border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;font-size:14px}
   .cnt i{width:14px;height:14px;border-radius:4px;display:inline-block;flex:none}
-  .cnt b{margin-left:auto;font-size:18px}
+  .cnt b{margin-left:auto;font-size:18px;white-space:nowrap}
   /* 학습 모델 */
   .tmRows{display:flex;flex-direction:column;gap:6px;margin:6px 0 12px}
   .tmRow{display:grid;grid-template-columns:minmax(80px,1.1fr) 2fr minmax(170px,1.4fr);gap:10px;align-items:center;
@@ -156,62 +159,137 @@
   .cmpRow figcaption{font-size:13px;color:var(--sub);text-align:center;margin-top:4px}
   .recState{font-weight:600}
   .recState.on{color:var(--bad)}
+
+  /* ---- 노트북 한 화면 배치 (2026-11-09): 왼쪽 = 로봇의 눈·몸(고정), 오른쪽 = 두뇌 ---- */
+  header{padding:8px 16px}
+  h1{font-size:17px}
+  main{gap:14px;padding:12px 16px 28px}
+  .col.left{position:sticky;top:calc(var(--hdrH, 50px) + 12px);align-self:start;gap:12px;
+            max-height:calc(100vh - var(--hdrH, 50px) - 24px)}
+  .btn.sm{padding:5px 12px;font-size:14px;border-radius:8px}
+  .card.camCard{display:flex;flex-direction:column;min-height:0;flex:0 1 auto;padding:12px 14px}
+  .camTop{flex-wrap:nowrap;min-width:0}
+  .camTop h2{margin-right:2px}
+  .camTop select{flex:1 1 auto;min-width:0;max-width:240px;padding:5px 8px;font-size:13px}
+  .camTop .toggle{font-size:14px;white-space:nowrap}
+  .camCard .videoBox{flex:0 1 auto;min-height:160px;margin:8px 0 0}
+  .card.mbCard{flex:none;padding:12px 14px}
+  .mbTop{flex-wrap:nowrap;min-width:0}
+  .mbTop #serialInfo{margin-left:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .mbSub{display:flex;align-items:center;gap:8px;margin:8px 0 4px;flex-wrap:wrap}
+  .mbSub h3{margin:0;flex:1 1 auto;white-space:nowrap}
+  .mbSub .toggle{font-size:14px}
+  .mbSub select{padding:4px 8px;font-size:13px}
+  .mbCard .log{height:68px}
+  .aiShot{position:absolute;right:8px;bottom:8px;width:30%;margin:0;border:2px solid #fff;border-radius:8px;overflow:hidden;
+          background:#0f141c;cursor:zoom-in;box-shadow:0 2px 10px rgba(0,0,0,.4);z-index:2}
+  .aiShot img.shot{display:block !important;width:100%;max-height:none;border-radius:0}
+  .aiShot figcaption{position:absolute;left:0;top:0;background:rgba(15,20,28,.78);color:#fff;font-size:11px;padding:1px 7px;border-bottom-right-radius:6px}
+  .aiShot .x{position:absolute;right:3px;top:3px;width:20px;height:20px;line-height:18px;padding:0;border:none;border-radius:50%;
+             background:rgba(15,20,28,.78);color:#fff;font-size:13px;cursor:pointer}
+  .aiShot.big{right:0;bottom:0;width:100%;height:100%;border:none;border-radius:0;cursor:zoom-out}
+  .aiShot.big img.shot{height:100%;object-fit:contain}
+  .condbar{padding:6px 10px;margin-bottom:10px}
+  .condbar input{padding:6px 10px}
+  .tab{padding:8px 10px}
+  @media (max-width:960px){.col.left{position:static;max-height:none} .camCard .videoBox{max-height:55vh}}
+
+  /* 실험 조건: 머리줄 안 작은 칸 */
+  .hdrCond{display:flex;align-items:center;gap:6px;flex:1 1 240px;max-width:440px;min-width:200px;
+           background:var(--accent-soft);border-radius:9px;padding:3px 4px 3px 10px}
+  .hdrCond label{font-size:13px;white-space:nowrap;color:var(--accent);font-weight:600}
+  .hdrCond input{flex:1;min-width:0;padding:4px 8px;font-size:13.5px;border-color:#cfdcf7}
+  .hdrCond input:not(:placeholder-shown){font-weight:600;border-color:var(--accent)}
+  @media (max-width:1320px){h1 small{display:none}}
+  /* 서보 핀 선택 */
+  .pinPick{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;background:var(--warn-soft);border-radius:10px;padding:10px 12px;margin:14px 0 4px}
+
+  /* 도움말 */
+  .hexGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0 4px}
+  @media (max-width:640px){.hexGrid{grid-template-columns:1fr}}
+  .hexCard{border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+  .hexCard.main{border-color:var(--accent);background:var(--accent-soft)}
+  .hexCard b{font-size:15px}
+  .hexCard p{margin:0;font-size:13.5px;color:var(--sub)}
+  .hexCard .btn{align-self:flex-start;margin-top:6px}
+  dl.fix{display:grid;grid-template-columns:minmax(150px,34%) 1fr;gap:6px 12px;margin:6px 0;font-size:14px}
+  dl.fix dt{font-weight:600} dl.fix dd{margin:0;color:var(--sub)}
+  @media (max-width:640px){dl.fix{grid-template-columns:1fr} dl.fix dd{margin-bottom:6px}}
+  details.adv{margin-top:16px}
+  details.adv[open] summary{margin-bottom:6px}
+
+  /* 강사용 / 실습용 화면 */
+  body.learner .teacherOnly{display:none !important}
+  body:not(.learner) .learnerOnly{display:none !important}
+  .modeBadge{border:1px solid #e3c48a;background:var(--warn-soft);color:#7a4f00;border-radius:999px;padding:3px 10px;
+             font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .modeBadge:hover{background:#f3e2c0}
+  .modeLink{color:var(--sub);font-size:12.5px;text-decoration:underline;cursor:pointer;background:none;border:none;padding:0}
+  .unlock{position:fixed;inset:0;background:rgba(15,20,28,.45);display:flex;align-items:center;justify-content:center;z-index:30}
+  .unlockCard{background:#fff;border-radius:14px;padding:20px 22px;width:min(360px,90vw);box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  .unlockCard h2{margin-bottom:4px}
+  .unlockCard input{width:100%;margin-top:8px}
+  .unlockCard .row{justify-content:flex-end;margin-top:6px}
 </style>
 </head>
-<body>
+<body class="learner">
 <header>
   <h1>피지컬 AI 실습 웹앱<small>micro:bit 분류 로봇 · 같은 몸, 다른 두뇌</small></h1>
+  <div class="hdrCond" title="지금 시험하는 조건을 적어 두면 기록 탭에서 조건별 성공률로 묶어 보여 줘요">
+    <label for="condition">실험 조건</label>
+    <input type="text" id="condition" placeholder="예: 처음 보는 물건, 조명 변경">
+  </div>
   <div class="chips">
     <span class="chip" id="chipMb"><span class="dot"></span><span>micro:bit 미연결</span></span>
     <span class="chip" id="chipCam"><span class="dot"></span><span>카메라 꺼짐</span></span>
     <span class="chip" id="chipTm"><span class="dot"></span><span>학습 모델 없음</span></span>
     <span class="chip" id="chipVlm"><span class="dot"></span><span>VLM 미설정</span></span>
-    <span class="chip" id="chipCalls"><span class="dot"></span><span>호출 0</span></span>
+    <span class="chip teacherOnly" id="chipCalls"><span class="dot"></span><span>호출 0</span></span>
+    <button class="modeBadge teacherOnly" id="btnLeaveTeacher" title="누르면 연수생이 보는 실습용 화면으로 바뀌어요">강사용 · 잠그기</button>
   </div>
 </header>
 
 <main>
-  <div class="col">
-    <section class="card">
-      <div class="row between"><h2>micro:bit</h2><span class="hint" id="serialInfo">연결 안 됨</span></div>
-      <div class="row wrap" style="margin:10px 0">
-        <button class="btn primary" id="btnSerial">micro:bit 연결</button>
-        <button class="btn" id="btnSerialOff" disabled>연결 끊기</button>
+  <div class="col left">
+    <section class="card camCard" title="외장 웹캠을 접시 위에서 내려다보게 두세요">
+      <div class="row camTop">
+        <h2>카메라</h2>
+        <button class="btn sm" id="btnCam">카메라 켜기</button>
+        <select id="camSelect" title="카메라 선택 — 고른 카메라는 다음에도 먼저 켜져요" class="hidden"></select>
+        <label class="toggle" title="미리보기와 VLM에게 보내는 사진이 함께 뒤집혀요"><input type="checkbox" id="mirror"> 좌우 반전</label>
       </div>
-      <h3>주고받은 신호 (→ 보냄, ← micro:bit 응답)</h3>
-      <div class="log" id="mbLog"></div>
-      <div class="row wrap" style="margin-top:10px">
+      <div class="videoBox">
+        <video id="video" playsinline muted></video>
+        <div class="placeholder" id="camPlaceholder">카메라가 꺼져 있어요<br>위의 '카메라 켜기'를 누르세요</div>
+        <figure class="aiShot hidden" id="aiShot" title="AI가 마지막으로 본 사진 — 누르면 크게 보기">
+          <img id="lastShot" class="shot" alt="마지막으로 AI가 본 사진">
+          <figcaption>AI가 본 사진</figcaption>
+          <button class="x" id="aiShotX" title="숨기기 (다음 판단 때 다시 나와요)">×</button>
+        </figure>
+        <span id="noShot" class="hidden"></span>
+      </div>
+    </section>
+
+    <section class="card mbCard">
+      <div class="row mbTop">
+        <h2>micro:bit</h2>
+        <button class="btn primary sm" id="btnSerial">micro:bit 연결</button>
+        <button class="btn sm" id="btnSerialOff" disabled>연결 끊기</button>
+        <span class="hint" id="serialInfo">연결 안 됨</span>
+      </div>
+      <div class="mbSub">
+        <h3>주고받은 신호 (→ 보냄, ← 응답)</h3>
         <label class="toggle" title="L·R로 접시를 기울인 뒤 C를 보내 수평으로 되돌려요"><input type="checkbox" id="autoReturn"> 분류 뒤 수평 복귀</label>
         <select id="returnDelay" title="기울인 뒤 수평으로 돌아오기까지 기다리는 시간">
           <option value="1">1초 뒤</option><option value="1.5">1.5초 뒤</option><option value="2">2초 뒤</option><option value="3">3초 뒤</option>
         </select>
       </div>
-    </section>
-
-    <section class="card">
-      <div class="row between"><h2>카메라</h2><span class="hint">접시 위를 내려다보게 두기</span></div>
-      <div class="videoBox">
-        <video id="video" playsinline muted></video>
-        <div class="placeholder" id="camPlaceholder">카메라가 꺼져 있어요<br>아래 '카메라 켜기'를 누르세요</div>
-      </div>
-      <div class="row wrap">
-        <button class="btn" id="btnCam">카메라 켜기</button>
-        <select id="camSelect" title="카메라 선택" class="hidden"></select>
-        <label class="toggle" title="미리보기와 VLM에게 보내는 사진이 함께 뒤집혀요"><input type="checkbox" id="mirror"> 좌우 반전</label>
-      </div>
-      <h3>마지막으로 AI가 본 사진</h3>
-      <img id="lastShot" class="shot" alt="마지막으로 AI가 본 사진">
-      <div class="hint" id="noShot">아직 AI가 본 사진이 없어요</div>
+      <div class="log" id="mbLog"></div>
     </section>
   </div>
 
   <div class="col">
     <section class="card">
-      <div class="condbar">
-        <label for="condition" style="white-space:nowrap;font-size:14px">실험 조건</label>
-        <input type="text" id="condition" placeholder="예: 학습한 물건 / 처음 보는 물건 / 조명 변경 — 기록표에서 조건별로 묶어 보여 줘요">
-      </div>
-
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" data-tab="manual" aria-selected="true">사람<small>1차시</small></button>
         <button class="tab" role="tab" data-tab="rule" aria-selected="false">규칙<small>1차시</small></button>
@@ -219,7 +297,7 @@
         <button class="tab" role="tab" data-tab="vlm" aria-selected="false">VLM<small>3·4차시</small></button>
         <button class="tab" role="tab" data-tab="demo" aria-selected="false">시연<small>5차시</small></button>
         <button class="tab" role="tab" data-tab="records" aria-selected="false">기록 <span id="recCount"></span></button>
-        <button class="tab" role="tab" data-tab="settings" aria-selected="false">설정</button>
+        <button class="tab teacherOnly" role="tab" data-tab="settings" aria-selected="false">설정</button>
         <button class="tab" role="tab" data-tab="help" aria-selected="false">도움말</button>
       </div>
 
@@ -261,30 +339,32 @@
 
       <!-- 규칙 -->
       <div class="panel" id="panel-rule">
-        <p class="lead"><b>규칙이 두뇌</b> — 정한 색의 픽셀 수를 세어 판단해요. 왼쪽 색이 많으면 왼쪽 상자, 오른쪽 색이 많으면 오른쪽 상자, 둘 다 최소 픽셀 수보다 적으면 보류.</p>
+        <p class="lead"><b>라벨 규칙이 두뇌</b> — 로봇은 물건이 무엇인지 몰라요. 사람이 붙여 둔 스티커 색만 읽고, 미리 정한 규칙대로 움직여요.</p>
+        <div class="ruleSentence" id="ruleSentence"></div>
         <div class="split">
           <div>
-            <div class="field"><label>왼쪽 상자로 보낼 색</label><div class="swatches" id="swLeft"></div></div>
-            <div class="field"><label>오른쪽 상자로 보낼 색</label><div class="swatches" id="swRight"></div></div>
+            <div class="field"><label>왼쪽 상자 스티커 색</label><div class="swatches" id="swLeft"></div></div>
+            <div class="field"><label>오른쪽 상자 스티커 색</label><div class="swatches" id="swRight"></div></div>
             <div class="field">
-              <label for="ruleMin">최소 픽셀 수 — 이보다 적으면 '없다'고 봄</label>
-              <div class="row"><input type="range" id="ruleMin" min="20" max="4000" step="20" style="flex:1"><b id="ruleMinVal" style="min-width:60px;text-align:right"></b></div>
+              <label for="ruleMin">스티커 최소 크기 — 이보다 작은 색 조각은 스티커로 보지 않음</label>
+              <div class="row"><input type="range" id="ruleMin" min="10" max="1000" step="10" style="flex:1"><b id="ruleMinVal" style="min-width:60px;text-align:right"></b></div>
             </div>
             <div class="field">
-              <label for="ruleTol">색 범위 — 얼마나 비슷한 색까지 같은 색으로 셀까</label>
+              <label for="ruleTol">색 범위 — 얼마나 비슷한 색까지 같은 색으로 볼까</label>
               <div class="row"><input type="range" id="ruleTol" min="5" max="45" step="1" style="flex:1"><b id="ruleTolVal" style="min-width:60px;text-align:right"></b></div>
             </div>
           </div>
           <div>
-            <canvas id="ruleView" class="viewBox" width="160" height="120" title="규칙이 센 픽셀"></canvas>
-            <div class="hint" style="text-align:center">센 픽셀을 그 색으로 표시</div>
+            <canvas id="ruleView" class="viewBox" width="160" height="120" title="로봇이 찾은 스티커"></canvas>
+            <div class="hint" style="text-align:center">스티커 색과 비슷한 곳을 칠하고, 스티커로 인정한 곳에 상자 표시</div>
           </div>
         </div>
         <div class="counts">
-          <div class="cnt"><i id="ruleSwL"></i><span id="ruleNameL">왼쪽 색</span><b id="ruleCntL">—</b></div>
-          <div class="cnt"><i id="ruleSwR"></i><span id="ruleNameR">오른쪽 색</span><b id="ruleCntR">—</b></div>
+          <div class="cnt"><i id="ruleSwL"></i><span id="ruleNameL">왼쪽 스티커</span><b id="ruleCntL">—</b></div>
+          <div class="cnt"><i id="ruleSwR"></i><span id="ruleNameR">오른쪽 스티커</span><b id="ruleCntR">—</b></div>
           <div class="cnt"><span>지금 판단</span><b id="ruleNow">—</b></div>
         </div>
+        <div class="hint" id="ruleWhy" style="margin:-4px 0 10px">—</div>
         <div class="row wrap">
           <button class="btn primary big" id="btnRule">판단하고 분류<kbd>Space</kbd></button>
           <label class="toggle"><input type="checkbox" id="ruleAuto"> 자동 분류 (물건을 올리면 알아서)</label>
@@ -293,7 +373,7 @@
         <div class="result hidden" id="ruleResult">
           <div class="big" id="ruleBig">—</div>
           <dl class="kv">
-            <dt>센 픽셀</dt><dd id="ruleCounted">—</dd>
+            <dt>찾은 스티커</dt><dd id="ruleCounted">—</dd>
             <dt>보낸 명령</dt><dd id="ruleSent">—</dd>
             <dt>판단 시간</dt><dd id="ruleMs">—</dd>
           </dl>
@@ -535,7 +615,7 @@
         </div>
 
         <h3>연수생 배포 링크</h3>
-        <p class="hint">이 링크로 웹앱을 열면 중계 서버 주소와 연수 코드가 자동으로 들어가요. 웹앱을 https 주소에 올린 뒤에 쓰세요.</p>
+        <p class="hint">이 링크로 웹앱을 열면 중계 서버 주소와 연수 코드가 자동으로 들어가고 실습용 화면(설정 탭 없음)으로 열려요. 웹앱을 https 주소에 올린 뒤에 쓰세요. 강사 컴퓨터는 주소 끝에 <b>?teacher</b>를 붙여 열고 강사 비밀번호를 넣으면 강사용 화면이 돼요.</p>
         <div class="row">
           <input type="text" id="shareLink" readonly style="flex:1">
           <button class="btn" id="btnCopyLink">복사</button>
@@ -544,51 +624,80 @@
 
       <!-- 도움말 -->
       <div class="panel" id="panel-help">
-        <h3>분류 로봇 준비</h3>
+        <h3 style="margin-top:4px">분류 로봇 준비</h3>
         <ol class="steps">
-          <li>서보를 옆으로 눕혀 고정하고 혼에 접시를 붙이기, 양쪽 아래에 상자 두기. 서보 신호선은 micro:bit P0</li>
-          <li>아래 '명령 받기' 코드를 MakeCode에 넣어 micro:bit에 내려받기 (MakeCode 탭은 내려받은 뒤 닫기)</li>
-          <li>Chrome이나 Edge로 이 웹앱 열기 → 'micro:bit 연결' → 서보가 90°(수평)로 오는지 확인</li>
-          <li>'카메라 켜기' → 외장 웹캠을 목록에서 고르고 접시 위를 내려다보게 두기</li>
-          <li>사람 탭에서 ◀·▶로 물건이 상자로 미끄러지는지, 1.5초 뒤 수평으로 돌아오는지 확인</li>
+          <li>서보 선을 Ring:bit <b>1VG 핀(P1)</b>에 꽂고(갈색이 G 쪽) Ring:bit 전원 켜기</li>
+          <li>micro:bit를 USB로 연결 → 아래 <b>명령 받기</b> 파일을 내려받아 <b>MICROBIT</b> 드라이브에 끌어다 놓기 → LED에 ✓, 접시가 수평(90°)</li>
+          <li>'micro:bit 연결' → 목록에서 micro:bit 고르기</li>
+          <li>'카메라 켜기' → 외장 웹캠이 접시 위를 내려다보게 두기</li>
+          <li>사람 탭 ◀·▶ → 물건이 상자로 미끄러지고 1.5초 뒤 수평으로 돌아오는지 확인</li>
         </ol>
 
-        <h3>탭별 두뇌</h3>
-        <ul>
-          <li><b>사람 (1차시)</b>: 화면을 보고 버튼으로 분류. 각도 슬라이더는 4차시 '이상 명령' 실험용</li>
-          <li><b>규칙 (1차시)</b>: 왼쪽·오른쪽 색과 최소 픽셀 수를 정하면 색 픽셀 수로 판단</li>
-          <li><b>학습 모델 (2차시)</b>: Teachable Machine 공유 링크 → 모델 불러오기 → 클래스마다 보낼 동작 고르기</li>
-          <li><b>VLM (3·4차시)</b>: 분류 기준을 말로 쓰고 '찍고 묻기'. 이유 보이기, 같은 사진 5번 묻기</li>
-          <li><b>시연 (5차시)</b>: 시연 녹화 → 재생(관측 없이) → 배우기 → 정책 실행(가장 비슷한 시연을 따라 함)</li>
-        </ul>
+        <h3>micro:bit 파일 (서보 P1)</h3>
+        <div class="hexGrid">
+          <div class="hexCard main">
+            <b>명령 받기</b>
+            <p>모든 탭에서 써요 (1~3·5차시). 웹앱이 보낸 L·C·R·N·각도대로 접시를 기울여요.</p>
+            <button class="btn primary hexDl" data-src="hex/command_P1.hex" data-name="심화_명령받기_P1.hex">⬇ 심화_명령받기_P1.hex</button>
+          </div>
+          <div class="hexCard">
+            <b>클래스 이름 받기</b>
+            <p>학습 모델 탭에서 '이름 그대로 보내기'를 고를 때만 써요. 학용품 → 왼쪽, 간식 → 오른쪽.</p>
+            <button class="btn hexDl" data-src="hex/classname_P1.hex" data-name="심화_이름받기_P1.hex">⬇ 심화_이름받기_P1.hex</button>
+          </div>
+        </div>
+        <p class="hint" style="margin:4px 0 0">파일을 MICROBIT 드라이브에 끌어다 놓으면 끝나요. MakeCode 화면에 끌어다 놓으면 블록으로 열려요(고친 뒤 내려받았다면 MakeCode 탭은 닫기).</p>
 
-        <h3>micro:bit 코드 ① 명령 받기 (모든 탭 공용)</h3>
-        <p class="hint">L(150°)·C(90°)·R(30°)·N(X 표시)과 각도 명령 A0~A180을 받아요. MakeCode 새 프로젝트 → JavaScript 탭에 붙여 넣고 블록 탭으로 돌아가면 블록으로 바뀌어요.</p>
-        <pre class="code" id="mbCode1"></pre>
-        <div class="row wrap"><button class="btn" id="btnCopyCode1">코드 복사</button><a class="btn" href="https://makecode.microbit.org/#editor" target="_blank" rel="noopener">MakeCode 열기</a></div>
+        <h3>문제가 생기면</h3>
+        <dl class="fix">
+          <dt>micro:bit가 목록에 없음·포트를 못 엶</dt><dd>데이터 케이블인지 확인하고 다시 꽂기. MakeCode 탭이 열려 있으면 닫기</dd>
+          <dt>'← OK L'이 오는데 서보가 안 움직임</dt><dd>명령 받기 파일인지, 서보 선이 1VG(P1)인지, Ring:bit 전원·건전지 확인</dd>
+          <dt>접시가 반대쪽으로 기울어짐</dt><dd>서보를 반대로 눕혀 달기</dd>
+          <dt>카메라가 안 켜짐</dt><dd>카메라 자리에 뜨는 원인 문구대로 하기. Teachable Machine 탭·화상회의 등 카메라를 쓰는 곳 닫기</dd>
+          <dt>학습 모델이 좌우를 반대로 판단</dt><dd>'학습 때처럼 좌우 뒤집어 넣기'를 바꿔 보기</dd>
+          <dt>모델을 불러오지 못함</dt><dd>'모델 업로드' 뒤 나온 링크 전체를 넣었는지 확인. 학교망에서 막히면 '모델 파일로 불러오기'</dd>
+        </dl>
+        <div class="note">VLM 탭에서는 찍은 사진이 VLM 서버로 가요. 얼굴·이름표가 찍히지 않게 접시만 화면에 두세요. 다른 탭은 사진이 노트북 밖으로 나가지 않아요.</div>
 
-        <h3>micro:bit 코드 ② 클래스 이름 받기 (학습 모델 '이름 그대로 보내기'용)</h3>
-        <p class="hint">웹앱이 Teachable Machine 클래스 이름을 그대로 보내면, 이름마다 무엇을 할지 MakeCode에서 직접 정해요. 따옴표 안 글자를 클래스 이름과 똑같이(띄어쓰기 포함) 바꾸세요. 한글 이름이 맞지 않으면 클래스 이름을 영어로 바꿔 보세요.</p>
-        <pre class="code" id="mbCode2"></pre>
-        <div class="row"><button class="btn" id="btnCopyCode2">코드 복사</button></div>
-
-        <h3>문제 해결</h3>
-        <ul>
-          <li><b>micro:bit가 목록에 안 보임</b>: 충전 전용이 아닌 데이터 케이블인지 확인, 케이블을 다시 꽂기</li>
-          <li><b>포트를 열 수 없음</b>: MakeCode 탭이 micro:bit에 연결돼 있으면 그 탭을 닫고 다시 시도</li>
-          <li><b>접시가 반대쪽으로 기울어짐</b>: 서보를 반대로 눕히거나 MakeCode 코드에서 L·R 각도를 서로 바꾸기</li>
-          <li><b>각도 슬라이더·시연에서 안 움직임</b>: micro:bit에 ① 명령 받기 코드(각도 명령 포함)가 들어 있는지 확인</li>
-          <li><b>학습 모델이 왼쪽·오른쪽을 반대로 판단</b>: '학습 때처럼 좌우 뒤집어 넣기'를 바꿔 보기</li>
-          <li><b>모델을 불러오지 못함</b>: '모델 업로드'를 눌렀는지, 링크 전체를 복사했는지 확인. 학교망에서 막히면 '모델 파일로 불러오기'</li>
-          <li><b>이유 보이기에서 이유가 중간에 잘림</b>: 중계 서버가 예전 버전(답 20토큰 제한)일 수 있음 → 강사에게 문의</li>
-          <li><b>서보가 떨리거나 micro:bit가 다시 켜짐</b>: 3V 직결 대신 서보 확장보드 전원 사용</li>
-          <li><b>카메라가 안 켜짐</b>: 주소창 왼쪽 자물쇠 → 카메라 허용, Teachable Machine 탭 등 다른 곳에서 카메라를 쓰는지 확인</li>
-        </ul>
-        <div class="note">VLM 탭에서는 찍은 사진이 VLM 서버로 전송돼요. 얼굴·이름표가 찍히지 않게 접시만 화면에 두세요. 다른 탭은 사진이 이 노트북 밖으로 나가지 않아요.</div>
+        <details class="adv teacherOnly">
+          <summary>micro:bit 코드 보기·고치기 (서보 핀 바꾸기)</summary>
+          <div class="pinPick">
+            <label for="servoPin"><b>서보 신호선 핀</b></label>
+            <select id="servoPin">
+              <option value="P0">P0</option>
+              <option value="P1">P1 (연수 키트 · Ring:bit 1VG)</option>
+              <option value="P2">P2</option>
+            </select>
+            <span class="hint">아래 두 코드의 서보 블록이 이 핀으로 바뀌어요. 위 hex 파일은 P1용이에요.</span>
+          </div>
+          <h3>코드 ① 명령 받기</h3>
+          <p class="hint">L(150°)·C(90°)·R(30°)·N(X 표시)과 각도 명령 A0~A180을 받아요. MakeCode 새 프로젝트 → JavaScript 탭에 붙여 넣고 블록 탭으로 돌아가면 블록으로 바뀌어요.</p>
+          <pre class="code" id="mbCode1"></pre>
+          <div class="row wrap"><button class="btn" id="btnCopyCode1">코드 복사</button><a class="btn" href="https://makecode.microbit.org/#editor" target="_blank" rel="noopener">MakeCode 열기</a></div>
+          <h3>코드 ② 클래스 이름 받기</h3>
+          <p class="hint">따옴표 안 글자를 Teachable Machine 클래스 이름과 똑같이(띄어쓰기 포함) 바꾸세요. 한글 이름이 맞지 않으면 클래스 이름을 영어로 바꿔 보세요.</p>
+          <pre class="code" id="mbCode2"></pre>
+          <div class="row"><button class="btn" id="btnCopyCode2">코드 복사</button></div>
+          <dl class="fix" style="margin-top:12px">
+            <dt>이유 보이기에서 이유가 잘림</dt><dd>중계 서버가 예전 버전(답 20토큰 제한)일 수 있음 → 새 vlm-proxy-worker.js로 다시 배포</dd>
+            <dt>서보가 떨리거나 micro:bit가 다시 켜짐</dt><dd>3V 직결 대신 Ring:bit 전원 사용</dd>
+          </dl>
+        </details>
+        <p class="learnerOnly" style="text-align:right;margin:18px 0 0"><button class="modeLink" id="btnEnterTeacher" title="설정 탭과 micro:bit 코드가 보이는 화면">강사용 화면으로</button></p>
       </div>
     </section>
   </div>
 </main>
+
+<div class="unlock hidden" id="unlockBox" role="dialog" aria-modal="true" aria-labelledby="unlockTitle">
+  <div class="unlockCard">
+    <h2 id="unlockTitle">강사용 화면</h2>
+    <p class="hint" style="margin:0">설정 탭과 micro:bit 코드가 보이는 화면이에요. 강사 비밀번호를 넣으세요.</p>
+    <input type="password" id="unlockPw" autocomplete="off" placeholder="강사 비밀번호">
+    <div class="hint" id="unlockMsg" style="color:var(--bad);min-height:20px;margin-top:4px"></div>
+    <div class="row"><button class="btn" id="btnUnlockCancel">닫기</button><button class="btn primary" id="btnUnlock">열기</button></div>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -608,15 +717,15 @@
     ["학용품 / 간식", "학용품은 왼쪽, 간식은 오른쪽"],
     ["물에 젖으면 안 되는 것", "물에 젖으면 안 되는 것은 왼쪽, 젖어도 괜찮은 것은 오른쪽"],
     ["시간표 보고 판단", "사진 속 시간표를 보고, 오늘 수업에 필요한 것은 왼쪽, 필요 없는 것은 오른쪽"],
-    ["빨강 / 파랑", "빨간 것은 왼쪽, 파란 것은 오른쪽"]
+    ["스티커 색", "빨간 스티커가 붙은 것은 왼쪽, 파란 스티커가 붙은 것은 오른쪽"]
   ];
   const COLOR_PRESETS = [["빨강", "#e53935"], ["주황", "#fb8c00"], ["노랑", "#fdd835"], ["초록", "#43a047"], ["파랑", "#1e63d6"], ["보라", "#8e24aa"]];
   const DEFAULTS = {
     mode: "proxy", proxyUrl: "", classCode: "", model: DEFAULT_MODEL,
     imgSize: 768, minInterval: 2, maxCalls: 100,
     mirror: false, autoSend: true, recManual: true, condition: "",
-    autoReturn: true, returnDelay: 1.5,
-    ruleLeft: "#e53935", ruleRight: "#1e63d6", ruleTol: 20, ruleMin: 300,
+    autoReturn: true, returnDelay: 1.5, servoPin: "P1",
+    ruleLeft: "#e53935", ruleRight: "#1e63d6", ruleTol: 20, ruleMin: 60,
     tmUrl: "", tmThreshold: 60, tmFlip: true, tmMaps: {},
     vlmRule: RULE_PRESETS[0][1], showReason: false, vlmPrompt: DEFAULT_VLM_PROMPT,
     demoStep: 3
@@ -671,6 +780,18 @@ serial.onDataReceived(serial.delimiters(Delimiters.NewLine), function () {
 pins.servoWritePin(AnalogPin.P0, 90)
 basic.showIcon(IconNames.Yes)`;
 
+  // 서보 신호선 핀: 코드 틀은 P0로 쓰고, 고른 핀으로 바꿔 보여 줌
+  const SERVO_PINS = ["P0", "P1", "P2"];
+  const servoPin = () => (SERVO_PINS.includes(settings.servoPin) ? settings.servoPin : "P1");
+  const mbCodeFor = (tpl) => tpl.replace(/AnalogPin\.P0\b/g, "AnalogPin." + servoPin());
+  function renderMbCodes() {
+    settings.servoPin = servoPin();
+    $("#mbCode1").textContent = mbCodeFor(MB_CODE_CMD);
+    $("#mbCode2").textContent = mbCodeFor(MB_CODE_NAME);
+    $("#servoPin").value = settings.servoPin;
+    $$(".pinName").forEach((el) => { el.textContent = settings.servoPin; });
+  }
+
   // ---------- 저장소 (실패해도 동작) ----------
   const store = {
     get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
@@ -700,6 +821,11 @@ basic.showIcon(IconNames.Yes)`;
     let changed = false;
     if (qp.get("proxy")) { settings.mode = "proxy"; settings.proxyUrl = qp.get("proxy"); changed = true; }
     if (qp.get("code")) { settings.classCode = qp.get("code"); changed = true; }
+    if (changed) store.del("pai.teacherKey");             // 연수생 배포 링크 = 실습용 화면(잠금)
+    if (qp.has("teacher")) {
+      store.sset("pai.askTeacher", "1");                 // 화면이 준비되면 강사 비밀번호 칸을 띄움
+      if (!changed) { try { history.replaceState(null, "", location.pathname); } catch (e) {} }
+    }
     if (changed) {
       store.set("pai.settings", settings);
       try { history.replaceState(null, "", location.pathname); } catch (e) {}
@@ -863,6 +989,7 @@ basic.showIcon(IconNames.Yes)`;
     stream = null;
     video.srcObject = null;
     setCamUI(false);
+    $("#camPlaceholder").innerHTML = "카메라가 꺼져 있어요<br>위의 '카메라 켜기'를 누르세요";
   }
 
   async function startCamera(deviceId) {
@@ -877,10 +1004,20 @@ basic.showIcon(IconNames.Yes)`;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video: vc, audio: false });
     } catch (e) {
-      stream = null;
-      setCamUI(false);
-      toast("카메라를 켤 수 없어요. 권한 허용과 다른 프로그램(Teachable Machine 탭 등) 사용 여부를 확인하세요.", "bad");
-      return;
+      // 권한 거절이 아니면 해상도 조건 없이 한 번 더 시도 (조건을 못 맞추는 웹캠 대비)
+      let err = e;
+      if (e && e.name !== "NotAllowedError" && e.name !== "SecurityError") {
+        try { stream = await navigator.mediaDevices.getUserMedia({ video: deviceId ? { deviceId: { exact: deviceId } } : true, audio: false }); err = null; }
+        catch (e2) { err = e2; }
+      }
+      if (err) {
+        stream = null;
+        setCamUI(false);
+        const why = camErrorText(err);
+        $("#camPlaceholder").innerHTML = `<div><b style="color:#f2b8b5">카메라를 켤 수 없어요</b><br>${esc(why)}<br><small>(오류 이름: ${esc(err.name || "알 수 없음")})</small></div>`;
+        toast("카메라를 켤 수 없어요 — " + why, "bad");
+        return;
+      }
     }
     video.srcObject = stream;
     try { await video.play(); } catch (e) {}
@@ -889,6 +1026,20 @@ basic.showIcon(IconNames.Yes)`;
     const cur = stream.getVideoTracks()[0]?.getSettings()?.deviceId;
     await listCameras(cur);
     if (activeTab === "rule") ruleLoopStart();
+  }
+
+  // 카메라 오류를 원인별로 풀어 씀
+  function camErrorText(e) {
+    const n = (e && e.name) || "", m = String((e && e.message) || "");
+    if (n === "NotAllowedError" && /system/i.test(m))
+      return "Windows가 카메라를 막고 있어요. 설정 → 개인 정보 보호 및 보안 → 카메라에서 '데스크톱 앱이 카메라에 액세스하도록 허용'을 켜세요.";
+    if (n === "NotAllowedError" || n === "SecurityError")
+      return "이 사이트의 카메라 권한이 막혀 있어요. 주소창 왼쪽 아이콘 → 카메라 '허용' → 새로고침.";
+    if (n === "NotFoundError" || n === "DevicesNotFoundError" || n === "OverconstrainedError")
+      return "카메라를 찾지 못했어요. 웹캠 USB를 다시 꽂거나, 노트북 카메라 덮개·카메라 끄기 키를 확인하세요.";
+    if (n === "NotReadableError" || n === "TrackStartError" || n === "AbortError")
+      return "다른 프로그램이 카메라를 쓰고 있거나 Windows가 막고 있어요. Windows 카메라 앱·Teachable Machine·화상회의를 닫고, Windows 카메라 개인 정보 설정을 확인하세요.";
+    return "권한 허용과 다른 프로그램의 카메라 사용 여부를 확인하세요.";
   }
 
   async function listCameras(currentId) {
@@ -925,6 +1076,35 @@ basic.showIcon(IconNames.Yes)`;
     img.src = dataUrl;
     img.style.display = "block";
     $("#noShot").classList.add("hidden");
+    $("#aiShot").classList.remove("hidden");
+  }
+
+
+  // ---------- 카메라 고르기 (2026-11-09: 외장 웹캠 기준) ----------
+  // 고른 카메라를 기억해 다음에 먼저 켜고, 처음이면 내장 카메라 대신 외장 웹캠을 고름
+  const CAM_KEY = "pai.camId";
+  const BUILTIN_CAM = /facetime|integrated|built-?in|내장|internal|front|user.?facing|truevision/i;
+  const NOT_A_WEBCAM = /\bir\b|infrared|적외선|virtual|가상|obs|snap camera|droidcam|iriun|continuity|연속성|iphone|ipad|desk ?view|데스크 ?뷰/i;
+  async function videoInputs() {
+    try { return (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput"); }
+    catch (e) { return []; }
+  }
+  async function camOnPreferred() {
+    const saved = store.get(CAM_KEY, "");
+    const devs = await videoInputs();
+    const useSaved = saved && devs.some((d) => d.deviceId === saved);
+    await startCamera(useSaved ? saved : undefined);
+    if (!stream || useSaved) return;
+    const track = stream.getVideoTracks()[0];
+    const label = (track && track.label) || "";
+    if (!BUILTIN_CAM.test(label)) return;
+    const curId = track.getSettings ? track.getSettings().deviceId : "";
+    const ext = (await videoInputs()).find((d) => d.deviceId && d.deviceId !== curId && d.label &&
+      !BUILTIN_CAM.test(d.label) && !NOT_A_WEBCAM.test(d.label));
+    if (ext) {
+      await startCamera(ext.deviceId);
+      if (stream) toast("외장 웹캠으로 켰어요: " + ext.label, "ok");
+    }
   }
 
   // ---------- 결과 판정 버튼 (탭마다 하나) ----------
@@ -975,22 +1155,53 @@ basic.showIcon(IconNames.Yes)`;
     });
     $("#ruleSwL").style.background = settings.ruleLeft;
     $("#ruleSwR").style.background = settings.ruleRight;
-    $("#ruleNameL").textContent = colorName(settings.ruleLeft) + " (왼쪽)";
-    $("#ruleNameR").textContent = colorName(settings.ruleRight) + " (오른쪽)";
+    $("#ruleNameL").textContent = colorAdj(settings.ruleLeft) + " 스티커";
+    $("#ruleNameR").textContent = colorAdj(settings.ruleRight) + " 스티커";
     $("#ruleMinVal").textContent = settings.ruleMin + "픽셀";
     $("#ruleTolVal").textContent = "±" + settings.ruleTol + "°";
+    const dot = (c) => `<span class="dot" style="background:${esc(c)}"></span>`;
+    $("#ruleSentence").innerHTML =
+      `<span class="kw">만약</span>${dot(settings.ruleLeft)}<b>${esc(colorAdj(settings.ruleLeft))} 스티커</b>만 보이면 → <b>왼쪽 상자</b><br>` +
+      `<span class="kw">만약</span>${dot(settings.ruleRight)}<b>${esc(colorAdj(settings.ruleRight))} 스티커</b>만 보이면 → <b>오른쪽 상자</b><br>` +
+      `<span class="kw">그 밖에는</span>스티커가 없거나 둘 다 보이면 → <b>보류</b>`;
+  }
+  // "빨강" → "빨간 스티커"처럼 자연스럽게
+  const colorAdj = (hex) => { const n = colorName(hex); return { "빨강": "빨간", "노랑": "노란", "파랑": "파란" }[n] || n; };
+
+  // 같은 색으로 이어진 가장 큰 덩어리(스티커 후보)를 찾음 — 흩어진 작은 점은 스티커로 보지 않음
+  function biggestBlob(mask, W, H, val) {
+    const seen = new Uint8Array(W * H), stack = new Int32Array(W * H);
+    let best = { n: 0 };
+    for (let p = 0; p < W * H; p++) {
+      if (mask[p] !== val || seen[p]) continue;
+      let sp = 0, n = 0, x0 = W, x1 = 0, y0 = H, y1 = 0;
+      stack[sp++] = p; seen[p] = 1;
+      while (sp) {
+        const q = stack[--sp], x = q % W, y = (q - x) / W;
+        n++;
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          const nx = x + dx, ny = y + dy;
+          if ((!dx && !dy) || nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+          const r = ny * W + nx;
+          if (mask[r] === val && !seen[r]) { seen[r] = 1; stack[sp++] = r; }
+        }
+      }
+      if (n > best.n) best = { n, x0, x1, y0, y1 };
+    }
+    return best;
   }
 
   function setRuleColor(side, c) {
     settings["rule" + side] = c;
     const other = side === "Left" ? settings.ruleRight : settings.ruleLeft;
     if (hueDist(rgbToHsv(...hexToRgb(c))[0], rgbToHsv(...hexToRgb(other))[0]) < settings.ruleTol) {
-      toast("왼쪽 색과 오른쪽 색이 너무 비슷해요", "warn");
+      toast("두 스티커 색이 너무 비슷해요. 다른 색을 고르세요", "warn");
     }
     saveSettings(true); renderSwatches();
   }
 
-  // 160x120으로 줄인 화면에서 두 색 픽셀을 셈 (draw면 센 픽셀을 그 색으로 칠해 보여 줌)
+  // 160x120으로 줄인 화면에서 두 스티커 색을 찾음 (draw면 비슷한 색을 칠하고 스티커로 인정한 곳에 상자 표시)
   function ruleEvaluate(draw) {
     if (!camOn()) return null;
     const t0 = performance.now();
@@ -1003,8 +1214,8 @@ basic.showIcon(IconNames.Yes)`;
     const img = ctx.getImageData(0, 0, W, H), d = img.data;
     const cl = hexToRgb(settings.ruleLeft), cr = hexToRgb(settings.ruleRight);
     const hl = rgbToHsv(...cl)[0], hr = rgbToHsv(...cr)[0], tol = Number(settings.ruleTol);
-    let nl = 0, nr = 0;
-    for (let i = 0; i < d.length; i += 4) {
+    const mask = new Uint8Array(W * H);
+    for (let i = 0, p = 0; i < d.length; i += 4, p++) {
       const r = d[i], g = d[i + 1], b = d[i + 2];
       const [h, s, v] = rgbToHsv(r, g, b);
       let m = 0;
@@ -1012,21 +1223,44 @@ basic.showIcon(IconNames.Yes)`;
         const dl = hueDist(h, hl), dr = hueDist(h, hr);
         if (dl <= tol && dl <= dr) m = 1; else if (dr <= tol) m = 2;
       }
-      if (m === 1) { nl++; if (draw) { d[i] = cl[0]; d[i + 1] = cl[1]; d[i + 2] = cl[2]; } }
-      else if (m === 2) { nr++; if (draw) { d[i] = cr[0]; d[i + 1] = cr[1]; d[i + 2] = cr[2]; } }
-      else if (draw) { const y = 30 + 0.3 * (0.3 * r + 0.59 * g + 0.11 * b); d[i] = d[i + 1] = d[i + 2] = y; }
+      mask[p] = m;
+      if (!draw) continue;
+      if (m === 1) { d[i] = cl[0]; d[i + 1] = cl[1]; d[i + 2] = cl[2]; }
+      else if (m === 2) { d[i] = cr[0]; d[i + 1] = cr[1]; d[i + 2] = cr[2]; }
+      else { const y = 30 + 0.3 * (0.3 * r + 0.59 * g + 0.11 * b); d[i] = d[i + 1] = d[i + 2] = y; }
     }
-    if (draw) ctx.putImageData(img, 0, 0);
+    const bl = biggestBlob(mask, W, H, 1), br = biggestBlob(mask, W, H, 2);
     const min = Number(settings.ruleMin);
-    let dec = "NONE";
-    if (nl >= min && nl >= nr) dec = "LEFT"; else if (nr >= min) dec = "RIGHT";
-    return { nl, nr, dec, cmd: DEC_CMD[dec], ms: Math.round(performance.now() - t0) };
+    const hasL = bl.n >= min, hasR = br.n >= min;
+    const nL = colorAdj(settings.ruleLeft), nR = colorAdj(settings.ruleRight);
+    let dec = "NONE", why;
+    if (hasL && !hasR) { dec = "LEFT"; why = `${nL} 스티커를 찾았어요 → 왼쪽 상자`; }
+    else if (hasR && !hasL) { dec = "RIGHT"; why = `${nR} 스티커를 찾았어요 → 오른쪽 상자`; }
+    else if (hasL && hasR) why = "두 색 스티커가 다 보여서 보류해요";
+    else if (bl.n || br.n) why = `스티커 색과 비슷한 조각이 있지만 최소 크기(${min})보다 작아서 스티커로 보지 않았어요`;
+    else why = "스티커가 보이지 않아요";
+    if (draw) {
+      ctx.putImageData(img, 0, 0);
+      [[hasL, bl, settings.ruleLeft], [hasR, br, settings.ruleRight]].forEach(([ok, bb, c]) => {
+        if (!ok) return;
+        // 픽셀 경계에 맞춰 흰 줄 - 색 줄(2칸) - 흰 줄로 상자를 그림 (흐려지지 않게)
+        const w = bb.x1 - bb.x0, h = bb.y1 - bb.y0;
+        ctx.lineWidth = 1; ctx.strokeStyle = "#fff";
+        ctx.strokeRect(bb.x0 - 0.5, bb.y0 - 0.5, w + 2, h + 2);
+        ctx.strokeRect(bb.x0 - 3.5, bb.y0 - 3.5, w + 8, h + 8);
+        ctx.lineWidth = 2; ctx.strokeStyle = c;
+        ctx.strokeRect(bb.x0 - 2, bb.y0 - 2, w + 5, h + 5);
+      });
+    }
+    return { nl: bl.n, nr: br.n, min, dec, why, cmd: DEC_CMD[dec], ms: Math.round(performance.now() - t0) };
   }
 
   function showRuleLive(ev) {
-    $("#ruleCntL").textContent = ev ? ev.nl : "—";
-    $("#ruleCntR").textContent = ev ? ev.nr : "—";
+    const cnt = (n) => (!ev ? "—" : n >= ev.min ? "있음 · " + n : n ? "작음 · " + n : "없음");
+    $("#ruleCntL").textContent = cnt(ev && ev.nl);
+    $("#ruleCntR").textContent = cnt(ev && ev.nr);
     $("#ruleNow").textContent = ev ? DEC_KO[ev.dec] : "카메라 꺼짐";
+    $("#ruleWhy").textContent = ev ? ev.why : "카메라를 켜면 스티커를 찾기 시작해요";
   }
 
   async function ruleCommit(ev, auto) {
@@ -1035,17 +1269,17 @@ basic.showIcon(IconNames.Yes)`;
     else if (!writer) { sentText = "보내지 못함 (micro:bit 연결 확인)"; if (!auto) toast("먼저 'micro:bit 연결'을 누르세요", "warn"); }
     else if (await act(ev.cmd)) { sent = ev.cmd; sentText = ev.cmd + " (" + CMD_KO[ev.cmd] + ")"; }
     else sentText = "보내지 못함";
-    const nL = colorName(settings.ruleLeft), nR = colorName(settings.ruleRight);
+    const nL = colorAdj(settings.ruleLeft), nR = colorAdj(settings.ruleRight);
     $("#ruleResult").classList.remove("hidden");
     $("#ruleBig").textContent = DEC_KO[ev.dec] + (auto ? " · 자동" : "");
-    $("#ruleCounted").textContent = `${nL} ${ev.nl} · ${nR} ${ev.nr} (최소 ${settings.ruleMin})`;
+    $("#ruleCounted").textContent = `${nL} ${ev.nl} · ${nR} ${ev.nr} (최소 크기 ${ev.min}) — ${ev.why}`;
     $("#ruleSent").textContent = sentText;
     $("#ruleMs").textContent = (ev.ms / 1000).toFixed(3) + "초";
     markJudge("#ruleJudge", "");
     showLastShot($("#ruleView").toDataURL("image/png"));
     lastRec.rule = addRecord({
-      mode: "규칙", auto, target: `${nL}→왼쪽 · ${nR}→오른쪽`,
-      answer: `${nL} ${ev.nl} · ${nR} ${ev.nr}`, decision: DEC_KO[ev.dec], sent, latency: ev.ms
+      mode: "규칙", auto, target: `라벨: ${nL} 스티커→왼쪽 · ${nR} 스티커→오른쪽`,
+      answer: `${nL} ${ev.nl} · ${nR} ${ev.nr} — ${ev.why}`, decision: DEC_KO[ev.dec], sent, latency: ev.ms
     });
   }
 
@@ -2002,8 +2236,8 @@ basic.showIcon(IconNames.Yes)`;
 
   $("#btnSerial").addEventListener("click", connectSerial);
   $("#btnSerialOff").addEventListener("click", () => disconnectSerial(false));
-  $("#btnCam").addEventListener("click", () => (stream ? stopCamera() : startCamera()));
-  $("#camSelect").addEventListener("change", (e) => startCamera(e.target.value));
+  $("#btnCam").addEventListener("click", () => (stream ? stopCamera() : camOnPreferred()));
+  $("#camSelect").addEventListener("change", (e) => { store.set(CAM_KEY, e.target.value); startCamera(e.target.value); });
   $("#mirror").addEventListener("change", (e) => { settings.mirror = e.target.checked; applyMirror(); saveSettings(true); });
   $("#autoReturn").addEventListener("change", (e) => { settings.autoReturn = e.target.checked; saveSettings(true); });
   $("#returnDelay").addEventListener("change", (e) => { settings.returnDelay = Number(e.target.value) || 1.5; saveSettings(true); });
@@ -2171,13 +2405,29 @@ basic.showIcon(IconNames.Yes)`;
     if (!v.startsWith("http")) { toast("아직 만들 수 있는 링크가 없어요", "warn"); return; }
     copyText(v, "배포 링크를 복사했어요");
   });
-  $("#btnCopyCode1").addEventListener("click", () => copyText(MB_CODE_CMD, "명령 받기 코드를 복사했어요"));
-  $("#btnCopyCode2").addEventListener("click", () => copyText(MB_CODE_NAME, "클래스 이름 받기 코드를 복사했어요"));
+  $("#btnCopyCode1").addEventListener("click", () => copyText(mbCodeFor(MB_CODE_CMD), `명령 받기 코드(서보 ${settings.servoPin})를 복사했어요`));
+  $("#btnCopyCode2").addEventListener("click", () => copyText(mbCodeFor(MB_CODE_NAME), `클래스 이름 받기 코드(서보 ${settings.servoPin})를 복사했어요`));
+  $("#servoPin").addEventListener("change", (e) => {
+    settings.servoPin = e.target.value; saveSettings(true); renderMbCodes();
+    toast(`두 코드의 서보 핀을 ${settings.servoPin}(으)로 바꿨어요. MakeCode에 다시 넣어 내려받으세요`, "ok");
+  });
 
   // 키보드
+  // 글자를 치는 칸에서만 단축키를 끔. 체크박스·슬라이더·버튼에 포커스가 있어도 화살표·Space는 동작
+  const TYPING_TYPES = ["text", "url", "password", "number", "search", "email", "tel"];
+  const isTyping = (el) => !!el && (el.tagName === "TEXTAREA" || el.isContentEditable ||
+    (el.tagName === "INPUT" && TYPING_TYPES.includes((el.getAttribute("type") || "text").toLowerCase())));
+  let typingHintAt = 0;
   document.addEventListener("keydown", (e) => {
     const tag = (e.target.tagName || "").toLowerCase();
-    if (["input", "textarea", "select"].includes(tag) || e.isComposing) return;
+    if (e.isComposing) return;
+    if (isTyping(e.target) || tag === "select") {
+      if (/^Arrow/.test(e.key) && (activeTab === "manual" || activeTab === "demo") && Date.now() - typingHintAt > 4000) {
+        typingHintAt = Date.now();
+        toast("글자 칸에 커서가 있어서 화살표가 명령으로 가지 않아요. 화면 빈 곳을 클릭한 뒤 누르세요", "warn");
+      }
+      return;
+    }
     const space = e.code === "Space" || e.key === " ";
     if (activeTab === "manual") {
       const map = { ArrowLeft: "L", ArrowUp: "C", ArrowRight: "R", ArrowDown: "N" };
@@ -2200,11 +2450,106 @@ basic.showIcon(IconNames.Yes)`;
     }
   });
 
+
+  // 도움말: micro:bit hex 내려받기 (웹앱 옆 hex 폴더에서 가져와 원고와 같은 파일 이름으로 저장)
+  $$(".hexDl").forEach((btn) => btn.addEventListener("click", async () => {
+    const src = btn.dataset.src, name = btn.dataset.name;
+    const save = (href) => { const a = document.createElement("a"); a.href = href; a.download = name; document.body.appendChild(a); a.click(); a.remove(); };
+    try {
+      const r = await fetch(src, { cache: "no-cache" });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const blob = await r.blob();
+      if (blob.size < 1000) throw new Error("too small");
+      const url = URL.createObjectURL(blob);
+      save(url);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      toast(`내려받았어요: ${name} — MICROBIT 드라이브에 끌어다 놓으세요`, "ok");
+    } catch (e) {
+      if (location.protocol === "file:") { save(src); return; }
+      toast("hex 파일을 찾지 못했어요. 웹앱(index.html) 옆에 hex 폴더가 함께 올라가 있는지 확인하세요", "bad");
+    }
+  }));
+
+  // 선택 상자는 고른 뒤 포커스를 풀어 ← →가 값(예: 카메라 목록)을 바꾸지 않게 함
+  document.addEventListener("change", (e) => { if (e.target.tagName === "SELECT") e.target.blur(); });
+  // 시연: 물건 이름 칸에서 Enter → 칸에서 빠져나와 녹화 시작/끝 (한글 입력 확정 Enter도 한 번으로 처리)
+  let demoEnterAt = 0, demoEnterPending = false;
+  const demoEnter = () => {
+    if (Date.now() - demoEnterAt < 400) return;
+    demoEnterAt = Date.now();
+    $("#demoName").blur();
+    demoRec ? stopDemoRec() : startDemoRec();
+  };
+  $("#demoName").addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.keyCode !== 229) return;
+    if (e.isComposing || e.keyCode === 229) { if (e.key === "Enter" || e.code === "Enter" || e.code === "NumpadEnter") demoEnterPending = true; return; }
+    e.preventDefault();
+    if (!e.repeat) demoEnter();
+  });
+  $("#demoName").addEventListener("compositionend", () => {
+    if (!demoEnterPending) return;
+    demoEnterPending = false;
+    setTimeout(demoEnter, 0);
+  });
+
   window.addEventListener("beforeunload", () => { if (port) { try { port.close(); } catch (e) {} } });
 
   // ---------- 시작 ----------
-  $("#mbCode1").textContent = MB_CODE_CMD;
-  $("#mbCode2").textContent = MB_CODE_NAME;
+
+  // 배치: 머리줄 높이에 맞춰 왼쪽(카메라·micro:bit) 열을 화면에 고정
+  const setHdrH = () => document.documentElement.style.setProperty("--hdrH", document.querySelector("header").offsetHeight + "px");
+  window.addEventListener("resize", setHdrH);
+  setHdrH();
+
+  // 강사용 / 실습용 화면 — 강사용은 강사 비밀번호로 열고, 이 브라우저에 기억(비밀번호를 바꾼 새 파일이면 다시 잠김)
+  // 파일에는 SHA-256("pai-teacher|" + 비밀번호) 값만 둠. 연수생의 실수를 막는 잠금이지 보안 장치는 아님(API 키는 중계 서버에만)
+  const TEACHER_HASH = "6e772afe17c58d76a1428d520981991fc755c1abeed08f289e3258c602b57ca3";
+  async function sha256Hex(text) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+  let teacherMode = store.get("pai.teacherKey", "") === TEACHER_HASH;
+  function applyMode() {
+    document.body.classList.toggle("learner", !teacherMode);
+    if (!teacherMode && activeTab === "settings") showTab("manual");
+    setHdrH();
+  }
+  function openUnlock() {
+    $("#unlockPw").value = ""; $("#unlockMsg").textContent = "";
+    $("#unlockBox").classList.remove("hidden");
+    setTimeout(() => $("#unlockPw").focus(), 0);
+  }
+  const closeUnlock = () => $("#unlockBox").classList.add("hidden");
+  async function tryUnlock() {
+    const pw = $("#unlockPw").value;
+    if (!pw) { $("#unlockPw").focus(); return; }
+    let h = "";
+    try { h = await sha256Hex("pai-teacher|" + pw); }
+    catch (e) { $("#unlockMsg").textContent = "이 주소에서는 확인할 수 없어요. https 주소로 열어 주세요."; return; }
+    if (h !== TEACHER_HASH) { $("#unlockMsg").textContent = "비밀번호가 달라요"; $("#unlockPw").select(); return; }
+    teacherMode = true; store.set("pai.teacherKey", h);
+    closeUnlock(); applyMode();
+    toast("강사용 화면이에요 — 설정 탭과 micro:bit 코드가 보여요", "ok");
+  }
+  function lockTeacher() {
+    teacherMode = false; store.del("pai.teacherKey"); applyMode();
+    toast("잠갔어요 — 실습용 화면(연수생 화면)이에요", "ok");
+  }
+  $("#btnEnterTeacher").addEventListener("click", openUnlock);
+  $("#btnLeaveTeacher").addEventListener("click", lockTeacher);
+  $("#btnUnlock").addEventListener("click", tryUnlock);
+  $("#btnUnlockCancel").addEventListener("click", closeUnlock);
+  $("#unlockBox").addEventListener("click", (e) => { if (e.target.id === "unlockBox") closeUnlock(); });
+  $("#unlockPw").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); tryUnlock(); }
+    else if (e.key === "Escape") closeUnlock();
+  });
+  applyMode();
+  if (store.sget("pai.askTeacher")) { store.sdel("pai.askTeacher"); if (!teacherMode) openUnlock(); }
+  // AI가 본 사진: 누르면 크게/작게, ×는 다음 판단 때까지 숨기기
+  $("#aiShot").addEventListener("click", (e) => { if (e.target.id !== "aiShotX") $("#aiShot").classList.toggle("big"); });
+  $("#aiShotX").addEventListener("click", () => { $("#aiShot").classList.add("hidden"); $("#aiShot").classList.remove("big"); });
+  renderMbCodes();
   fillSettingsForm();
   renderSwatches();
   applyMirror();
