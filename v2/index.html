@@ -169,7 +169,9 @@
   .btn.sm{padding:5px 12px;font-size:14px;border-radius:8px}
   .card.camCard{display:flex;flex-direction:column;min-height:0;flex:0 1 auto;padding:12px 14px}
   .camTop{flex-wrap:nowrap;min-width:0}
-  .camTop h2{margin-right:2px}
+  .camTop h2{margin-right:2px;white-space:nowrap;flex:none}
+  .camTop .btn{white-space:nowrap;flex:none}
+  .camTop .toggle{flex:none}
   .camTop select{flex:1 1 auto;min-width:0;max-width:240px;padding:5px 8px;font-size:13px}
   .camTop .toggle{font-size:14px;white-space:nowrap}
   .camCard .videoBox{flex:0 1 auto;min-height:160px;margin:8px 0 0}
@@ -271,6 +273,15 @@
   details.more summary{font-weight:600}
   details.more[open]{background:#fff}
   details.more[open] summary{margin-bottom:8px}
+
+  /* v2: 보낼 것(분류 명령 / 이름) */
+  .outRow{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:10px;font-size:14px}
+  .outRow > label{color:var(--sub);font-size:13px}
+  .outRow select{padding:5px 8px;font-size:13.5px}
+  .outNames{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px;color:var(--sub)}
+  .outNames input{width:92px;padding:5px 8px;font-size:13.5px}
+  .outNames input.wide{width:220px}
+  .result .reason{margin-top:0}
 </style>
 </head>
 <body class="learner">
@@ -416,11 +427,24 @@
           <label class="toggle"><input type="checkbox" id="ruleAuto"> 자동 분류 (물건을 올리면 알아서)</label>
           <label class="toggle"><input type="checkbox" class="autoSendCb"> 결과를 micro:bit로 보내기</label>
         </div>
+        <div class="outRow">
+          <label for="ruleOut">보낼 것</label>
+          <select id="ruleOut">
+            <option value="cmd">분류 명령 (L·R·N) — 명령 받기 파일</option>
+            <option value="name">이름 — 이름 받기 파일·직접 만든 코드</option>
+          </select>
+          <span class="outNames hidden" id="ruleNamesBox">
+            왼쪽 결과 <input type="text" id="ruleLblL" maxlength="30">
+            오른쪽 결과 <input type="text" id="ruleLblR" maxlength="30">
+            보류 <input type="text" id="ruleLblN" maxlength="30" placeholder="비우면 안 보냄">
+          </span>
+        </div>
         <div class="result hidden" id="ruleResult">
           <div class="big" id="ruleBig">—</div>
+          <div class="reason" id="ruleReason"></div>
           <dl class="kv">
             <dt>찾은 스티커</dt><dd id="ruleCounted">—</dd>
-            <dt>보낸 명령</dt><dd id="ruleSent">—</dd>
+            <dt>보낸 것</dt><dd id="ruleSent">—</dd>
             <dt>판단 시간</dt><dd id="ruleMs">—</dd>
           </dl>
           <div class="judge" id="ruleJudge"><span>이번 분류는?</span><button class="btn" data-v="O">맞음</button><button class="btn" data-v="X">틀림</button></div>
@@ -479,8 +503,9 @@
 
           <div class="result hidden" id="tmResult">
             <div class="big" id="tmBig">—</div>
+            <div class="reason" id="tmReason"></div>
             <dl class="kv">
-              <dt>보낸 명령</dt><dd id="tmSent">—</dd>
+              <dt>보낸 것</dt><dd id="tmSent">—</dd>
               <dt>판단 시간</dt><dd id="tmMs">—</dd>
             </dl>
             <div class="judge" id="tmJudge"><span>이번 분류는?</span><button class="btn" data-v="O">맞음</button><button class="btn" data-v="X">틀림</button></div>
@@ -504,7 +529,7 @@
 
       <!-- VLM -->
       <div class="panel" id="panel-vlm">
-        <p class="lead"><b>VLM이 두뇌</b> — 분류 기준을 말로 정하면 VLM이 사진을 보고 LEFT(왼쪽 상자)·RIGHT(오른쪽 상자)·NONE(보류)으로 답해요. 사진은 클라우드의 VLM 서버로 가요.</p>
+        <p class="lead"><b>VLM이 두뇌</b> — 분류 기준을 말로 정하면 VLM이 사진을 보고 LEFT(왼쪽 상자)·RIGHT(오른쪽 상자)·NONE(보류), 또는 정해 준 이름 중 하나로 답해요. 사진은 클라우드의 VLM 서버로 가요.</p>
         <div class="field">
           <label for="vlmRule">분류 기준</label>
           <textarea id="vlmRule" rows="2"></textarea>
@@ -513,6 +538,17 @@
         <div class="row wrap">
           <label class="toggle" title="이유를 먼저 쓰고 답하게 해요. 어려운 판단은 나아지지만 느려져요"><input type="checkbox" id="showReason"> 이유 보이기</label>
           <label class="toggle"><input type="checkbox" class="autoSendCb"> 답을 micro:bit로 보내기</label>
+        </div>
+        <div class="outRow" style="margin-top:6px">
+          <label for="vlmOut">보낼 것</label>
+          <select id="vlmOut">
+            <option value="cmd">분류 명령 (LEFT·RIGHT·NONE → L·R·N)</option>
+            <option value="name">이름 — VLM이 고를 이름을 정해 주기</option>
+          </select>
+          <span class="outNames hidden" id="vlmLabelsBox">
+            고를 이름 <input type="text" id="vlmLabels" class="wide" placeholder="학용품, 간식, 없음">
+            <span>쉼표로 구분 · 마지막은 '판단이 어려울 때'</span>
+          </span>
         </div>
         <div class="row wrap" style="margin-top:10px">
           <button class="btn primary big" id="btnAsk">찍고 묻기<kbd>Space</kbd></button>
@@ -525,7 +561,7 @@
           <div class="reason hidden" id="rReason"></div>
           <dl class="kv">
             <dt>AI 원래 답</dt><dd id="rRaw">—</dd>
-            <dt>보낸 명령</dt><dd id="rSent">—</dd>
+            <dt>보낸 것</dt><dd id="rSent">—</dd>
             <dt>응답 시간</dt><dd id="rMs">—</dd>
             <dt>질문 문장</dt><dd id="rPrompt" class="hint" style="white-space:pre-wrap">—</dd>
           </dl>
@@ -705,7 +741,7 @@
           </div>
           <div class="hexCard">
             <b>클래스 이름 받기</b>
-            <p>학습 모델 탭에서 '이름 그대로 보내기'를 고를 때만 써요. 학용품 → 왼쪽, 간식 → 오른쪽.</p>
+            <p>이름을 보낼 때 써요(학습 모델 '이름 그대로 보내기', 규칙·VLM '보낼 것: 이름'). 학용품 → 왼쪽, 간식 → 오른쪽.</p>
             <button class="btn hexDl" data-src="../hex/classname_P1.hex" data-name="심화_이름받기_P1.hex">⬇ 심화_이름받기_P1.hex</button>
           </div>
         </div>
@@ -791,6 +827,8 @@
     ruleLeft: "#e53935", ruleRight: "#1e63d6", ruleTol: 20, ruleMin: 60,
     tmUrl: "", tmThreshold: 60, tmFlip: true, tmMaps: {},
     vlmRule: RULE_PRESETS[0][1], showReason: false, vlmPrompt: DEFAULT_VLM_PROMPT,
+    ruleOut: "cmd", ruleNames: { L: "학용품", R: "간식", N: "없음" },
+    vlmOut: "cmd", vlmLabels: "학용품, 간식, 없음",
     demoStep: 3
   };
   const DEC_CMD = { LEFT: "L", RIGHT: "R", NONE: "N" };
@@ -1364,15 +1402,25 @@ basic.showIcon(IconNames.Yes)`;
     $("#ruleWhy").textContent = ev ? ev.why : "카메라를 켜면 스티커를 찾기 시작해요";
   }
 
+  // 보낼 것이 '이름'이면 판단(왼쪽·오른쪽·보류)마다 정한 이름을 보냄 (자동 복귀 없음 — 이름을 받은 코드가 정함)
+  const DEC_KEY = { LEFT: "L", RIGHT: "R", NONE: "N" };
+  const ruleNameOf = (dec) => nameCmd(((settings.ruleNames || {})[DEC_KEY[dec]]) || "");
   async function ruleCommit(ev, auto) {
     let sent = "", sentText;
+    const named = settings.ruleOut === "name", out = named ? ruleNameOf(ev.dec) : ev.cmd;
     if (!settings.autoSend) sentText = "보내지 않음 (보내기 꺼짐)";
+    else if (named && !out) sentText = "보내지 않음 (이 판단의 이름이 비어 있음)";
     else if (!writer) { sentText = "보내지 못함 (micro:bit 연결 확인)"; if (!auto) toast("먼저 'micro:bit 연결'을 누르세요", "warn"); }
+    else if (named) {
+      clearTimeout(returnTimer); returnTimer = null;
+      if (await sendCmd(out)) { sent = out; sentText = `"${out}" (이름)`; } else sentText = "보내지 못함";
+    }
     else if (await act(ev.cmd)) { sent = ev.cmd; sentText = ev.cmd + " (" + CMD_KO[ev.cmd] + ")"; }
     else sentText = "보내지 못함";
     const nL = colorAdj(settings.ruleLeft), nR = colorAdj(settings.ruleRight);
     $("#ruleResult").classList.remove("hidden");
-    $("#ruleBig").textContent = DEC_KO[ev.dec] + (auto ? " · 자동" : "");
+    $("#ruleBig").textContent = DEC_KO[ev.dec] + (named && out ? ` → "${out}"` : "") + (auto ? " · 자동" : "");
+    $("#ruleReason").textContent = ev.why;
     $("#ruleCounted").textContent = `${nL} ${ev.nl} · ${nR} ${ev.nr} (최소 크기 ${ev.min}) — ${ev.why}`;
     $("#ruleSent").textContent = sentText;
     $("#ruleMs").textContent = (ev.ms / 1000).toFixed(3) + "초";
@@ -1438,6 +1486,44 @@ basic.showIcon(IconNames.Yes)`;
     const tpl = settings.vlmPrompt || DEFAULT_VLM_PROMPT;
     const body = tpl.includes("{기준}") ? tpl.split("{기준}").join(rule) : tpl + "\n분류 기준: " + rule;
     return body + "\n" + (withReason ? FORMAT_REASON : FORMAT_SHORT);
+  }
+
+  // 보낼 것이 '이름'일 때: VLM에게 정해 준 이름 중 하나를 고르게 함
+  const LABEL_PROMPT =
+    "사진은 micro:bit 로봇의 카메라가 본 모습이야.\n" +
+    "분류 기준: {기준}\n" +
+    "사진을 이 기준으로 판단해서 다음 이름 중 가장 알맞은 하나를 골라: {이름들}.\n" +
+    "어느 것인지 판단하기 어려우면 '{마지막}'{을를} 골라.";
+  const FORMAT_LABEL_SHORT = "답은 위 이름 중 하나만 그대로 써.";
+  const FORMAT_LABEL_REASON = "먼저 '이유:' 뒤에 판단 이유를 한두 문장으로 쓰고, 마지막 줄에 '답: ' 뒤에 위 이름 중 하나만 그대로 써.";
+  function vlmLabelList() {
+    const seen = new Set();
+    return String(settings.vlmLabels || "").split(/[,，、\n]/).map((x) => nameCmd(x)).filter((x) => x && !seen.has(x) && seen.add(x)).slice(0, 8);
+  }
+  function buildLabelPrompt(rule, labels, withReason) {
+    const last = labels[labels.length - 1], c = last.charCodeAt(last.length - 1);
+    const eul = c >= 0xAC00 && c <= 0xD7A3 ? ((c - 0xAC00) % 28 ? "을" : "를") : "을(를)";   // 받침에 맞춘 조사
+    return LABEL_PROMPT.split("{기준}").join(rule).split("{이름들}").join(labels.join(", ")).split("{마지막}").join(last).split("{을를}").join(eul) +
+      "\n" + (withReason ? FORMAT_LABEL_REASON : FORMAT_LABEL_SHORT);
+  }
+  // 답에서 이름 찾기: '답:' 줄(없으면 답 전체)에서 정확히 같은 이름, 아니면 들어 있는 이름이 하나일 때만 인정
+  function parseLabel(text, labels) {
+    const raw = String(text || "");
+    const norm = (x) => String(x).replace(/["'“”‘’`*.。!\s]/g, "").toLowerCase();
+    let seg = raw, reason = raw;
+    const re = /답\s*[:：]\s*(.+)$/gm;
+    let m, last = null;
+    while ((m = re.exec(raw))) last = m;
+    if (last) { seg = last[1]; reason = raw.slice(0, last.index); }
+    const n = norm(seg);
+    let dec = labels.find((l) => norm(l) === n) || null;
+    if (!dec) {
+      let inc = labels.filter((l) => norm(l) && n.includes(norm(l)));
+      inc = inc.filter((l) => !inc.some((o) => o !== l && norm(o).includes(norm(l))));   // '간식'과 '간식류'가 겹치면 긴 쪽
+      if (inc.length === 1) dec = inc[0];
+    }
+    reason = reason.replace(/^\s*이유\s*[:：]\s*/m, "").trim();
+    return { dec, reason };
   }
 
   async function askVLM(b64, prompt, maxTokens) {
@@ -1528,6 +1614,7 @@ basic.showIcon(IconNames.Yes)`;
     if (waitMs > 0) { toast(Math.ceil(waitMs / 1000) + "초 뒤에 다시 물어볼 수 있어요", "warn"); return false; }
     if (calls + (n || 1) > Number(settings.maxCalls)) { toast("이 컴퓨터의 최대 호출 수를 넘어요. 강사에게 문의하세요.", "bad"); return false; }
     if (!$("#vlmRule").value.trim()) { toast("분류 기준을 입력하세요", "warn"); return false; }
+    if (settings.vlmOut === "name" && vlmLabelList().length < 2) { toast("고를 이름을 쉼표로 2개 이상 적어 주세요", "warn"); return false; }
     return true;
   }
 
@@ -1535,12 +1622,12 @@ basic.showIcon(IconNames.Yes)`;
     return e && e.message === "Failed to fetch" ? "서버에 닿지 못했어요 (인터넷·주소 확인)" : (e && e.message) || "알 수 없는 오류";
   }
 
-  async function callOnce(shot, prompt, withReason) {
+  async function callOnce(shot, prompt, withReason, labels) {
     calls += 1; store.set("pai2.calls", calls); renderCalls();
     const t0 = performance.now();
     try {
       const out = await askVLM(shot.b64, prompt, withReason ? 300 : 20);
-      const res = Object.assign({ ms: Math.round(performance.now() - t0) }, out, parseAnswer(out.text));
+      const res = Object.assign({ ms: Math.round(performance.now() - t0) }, out, labels ? parseLabel(out.text, labels) : parseAnswer(out.text));
       if (!withReason) res.reason = "";
       return res;
     } catch (e) {
@@ -1562,11 +1649,12 @@ basic.showIcon(IconNames.Yes)`;
     showLastShot(shot.dataUrl);
     const rule = $("#vlmRule").value.trim();
     const withReason = settings.showReason;
-    const prompt = buildPrompt(rule, withReason);
+    const labels = settings.vlmOut === "name" ? vlmLabelList() : null;
+    const prompt = labels ? buildLabelPrompt(rule, labels, withReason) : buildPrompt(rule, withReason);
 
     busy = true; setAskUI(true);
     lastCallAt = Date.now();
-    const r = await callOnce(shot, prompt, withReason);
+    const r = await callOnce(shot, prompt, withReason, labels);
     busy = false; setAskUI(false);
     lastCallAt = Date.now();
 
@@ -1578,11 +1666,16 @@ basic.showIcon(IconNames.Yes)`;
     let sent = "", sentText;
     if (!r.dec) sentText = "보내지 않음 (답이 하나로 정해지지 않음)";
     else if (!settings.autoSend) sentText = "보내지 않음 (보내기 꺼짐)";
+    else if (labels) {
+      clearTimeout(returnTimer); returnTimer = null;
+      if (await sendCmd(r.dec)) { sent = r.dec; sentText = `"${r.dec}" (이름)`; } else sentText = "보내지 못함 (micro:bit 연결 확인)";
+    }
     else if (await act(DEC_CMD[r.dec])) { sent = DEC_CMD[r.dec]; sentText = sent + " (" + CMD_KO[sent] + ")"; }
     else sentText = "보내지 못함 (micro:bit 연결 확인)";
     const cut = withReason && (r.stop === "max_tokens" || !/답\s*[:：]/.test(r.text));
-    showVlmResult({ r, sentText, ms: r.ms, prompt, reuse, withReason, cut });
-    lastRec.vlm = addRecord({ mode: "VLM", target: rule, answer: r.text.trim(), decision: r.dec ? DEC_KO[r.dec] : "판단 불가", sent, latency: r.ms, reuse, reason: withReason });
+    showVlmResult({ r, sentText, ms: r.ms, prompt, reuse, withReason, cut, named: !!labels });
+    lastRec.vlm = addRecord({ mode: "VLM", target: labels ? `${rule} [이름: ${labels.join("·")}]` : rule, answer: r.text.trim(),
+      decision: r.dec ? (labels ? r.dec : DEC_KO[r.dec]) : "판단 불가", sent, latency: r.ms, reuse, reason: withReason });
   }
 
   function showVlmResult(o) {
@@ -1597,7 +1690,7 @@ basic.showIcon(IconNames.Yes)`;
       $("#rRaw").textContent = o.error;
       $("#rSent").textContent = "보내지 않음";
     } else {
-      $("#rBig").textContent = o.r.dec ? `${o.r.dec} · ${DEC_KO[o.r.dec]}` : "판단 불가";
+      $("#rBig").textContent = o.r.dec ? (o.named ? `"${o.r.dec}"` : `${o.r.dec} · ${DEC_KO[o.r.dec]}`) : "판단 불가";
       const showR = o.withReason && o.r.reason;
       rs.classList.toggle("hidden", !showR && !o.cut);
       rs.textContent = (showR ? "이유: " + o.r.reason : "") +
@@ -1616,7 +1709,8 @@ basic.showIcon(IconNames.Yes)`;
     showLastShot(shot.dataUrl);
     const rule = $("#vlmRule").value.trim();
     const withReason = settings.showReason;
-    const prompt = buildPrompt(rule, withReason);
+    const labels = settings.vlmOut === "name" ? vlmLabelList() : null;
+    const prompt = labels ? buildLabelPrompt(rule, labels, withReason) : buildPrompt(rule, withReason);
     const box = $("#fiveBox"), tb = $("#fiveTable tbody");
     box.classList.remove("hidden");
     tb.innerHTML = "";
@@ -1625,11 +1719,11 @@ basic.showIcon(IconNames.Yes)`;
     const tally = {};
     for (let i = 1; i <= 5; i++) {
       setAskUI(true, `${i}/5번째 묻는 중…`);
-      const r = await callOnce(shot, prompt, withReason);
+      const r = await callOnce(shot, prompt, withReason, labels);
       const ans = r.error ? "오류" : (r.dec || "판단 불가");
       tally[ans] = (tally[ans] || 0) + 1;
       tb.insertAdjacentHTML("beforeend", `<tr><td>${i}</td><td><b>${esc(ans)}</b></td><td>${esc(r.error || r.reason || (withReason ? "" : "(이유 보이기 꺼짐)"))}</td><td>${(r.ms / 1000).toFixed(2)}초</td></tr>`);
-      lastRec.vlm = addRecord({ mode: "VLM", target: rule, answer: r.error ? "(오류) " + r.error : r.text.trim(), decision: r.error ? "" : (r.dec ? DEC_KO[r.dec] : "판단 불가"), sent: "", latency: r.ms, reuse: i > 1, five: i + "/5", reason: withReason });
+      lastRec.vlm = addRecord({ mode: "VLM", target: rule, answer: r.error ? "(오류) " + r.error : r.text.trim(), decision: r.error ? "" : (r.dec ? (labels ? r.dec : DEC_KO[r.dec]) : "판단 불가"), sent: "", latency: r.ms, reuse: i > 1, five: i + "/5", reason: withReason });
     }
     busy = false; setAskUI(false);
     lastCallAt = Date.now();
@@ -1842,6 +1936,8 @@ basic.showIcon(IconNames.Yes)`;
     }
     $("#tmResult").classList.remove("hidden");
     $("#tmBig").textContent = `${ev.label} · ${ev.pct}%` + (auto ? " · 자동" : "");
+    $("#tmReason").textContent = `확신도가 가장 높은 클래스는 '${ev.label}'(${ev.pct}%) — 인식 기준 ${settings.tmThreshold}% ` +
+      (ev.pass ? "이상이라 이 클래스의 동작을 해요" : "보다 낮아서 보내지 않아요");
     $("#tmSent").textContent = sentText;
     $("#tmMs").textContent = (ev.ms / 1000).toFixed(2) + "초";
     markJudge("#tmJudge", "");
@@ -2658,6 +2754,24 @@ basic.showIcon(IconNames.Yes)`;
   });
   applyMode();
   if (store.sget("pai2.askTeacher")) { store.sdel("pai2.askTeacher"); if (!teacherMode) openUnlock(); }
+  // 보낼 것(분류 명령 / 이름)
+  function renderOutUI() {
+    const rn = settings.ruleNames || {};
+    $("#ruleOut").value = settings.ruleOut === "name" ? "name" : "cmd";
+    $("#ruleNamesBox").classList.toggle("hidden", settings.ruleOut !== "name");
+    $("#ruleLblL").value = rn.L ?? ""; $("#ruleLblR").value = rn.R ?? ""; $("#ruleLblN").value = rn.N ?? "";
+    $("#vlmOut").value = settings.vlmOut === "name" ? "name" : "cmd";
+    $("#vlmLabelsBox").classList.toggle("hidden", settings.vlmOut !== "name");
+    $("#vlmLabels").value = settings.vlmLabels || "";
+  }
+  $("#ruleOut").addEventListener("change", (e) => { settings.ruleOut = e.target.value; saveSettings(true); renderOutUI(); });
+  $("#vlmOut").addEventListener("change", (e) => { settings.vlmOut = e.target.value; saveSettings(true); renderOutUI(); });
+  ["L", "R", "N"].forEach((k) => $("#ruleLbl" + k).addEventListener("change", (e) => {
+    settings.ruleNames = Object.assign({}, settings.ruleNames, { [k]: nameCmd(e.target.value) }); saveSettings(true);
+  }));
+  $("#vlmLabels").addEventListener("change", (e) => { settings.vlmLabels = e.target.value; saveSettings(true); });
+  renderOutUI();
+
   // 시작하기 띠 버튼
   $("#btnStartMb").addEventListener("click", () => $("#btnSerial").click());
   $("#btnStartCam").addEventListener("click", () => { if (!stream) $("#btnCam").click(); });
@@ -2686,7 +2800,7 @@ basic.showIcon(IconNames.Yes)`;
   }
 
   // 테스트용으로 바깥에서 쓸 수 있게 노출
-  window.__pai = { parseAnswer, buildPrompt, guessAction, tmBase, rgbToHsv, similarity };
+  window.__pai = { parseAnswer, buildPrompt, guessAction, tmBase, rgbToHsv, similarity, parseLabel, buildLabelPrompt };
 })();
 </script>
 </body>
