@@ -4,302 +4,350 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>피지컬 AI 실습 웹앱 v2 — micro:bit 분류 로봇</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
+  /* ===== 피지컬 AI 실습 v2 — 실험 노트 디자인 (2026-11-09) =====
+     종이(실험 노트) 위에 잉크 색으로 쓰고, 빨강·파랑은 스티커 색(왼쪽·오른쪽 상자)에만 씀.
+     눈에 띄는 곳은 하나: 두뇌를 갈아 끼우는 '두뇌 고르기' 줄. 나머지는 조용하게. */
   :root{
-    --bg:#f4f6f9; --card:#ffffff; --ink:#1b2230; --sub:#5d6677; --line:#e2e6ec;
-    --accent:#2f6fed; --accent-soft:#e8f0fe; --ok:#1f9d55; --ok-soft:#e5f4e4;
-    --bad:#d64545; --bad-soft:#fbebeb; --warn:#b7791f; --warn-soft:#f9eeda;
-    --radius:12px;
+    --paper:#F6F8FB; --grid:#E8EDF5; --sheet:#FFFFFF;
+    --ink:#1F2A44; --ink-2:#56627A; --ink-3:#8A94A8;
+    --rule:#CDD5E2; --rule-2:#E5EAF1; --tint:#F0F3F8;
+    --left:#D2392F; --right:#2356C4;
+    --ok:#1D8348; --ok-soft:#E7F3EC; --warn:#9A5B00; --warn-soft:#FFF4D6; --bad:#C2352C; --bad-soft:#FCEDEC;
+    --hi:#FFE070; --screen:#0E1527;
+    /* 예전 이름(스크립트 안에서 쓰는 곳이 있음) */
+    --accent:var(--ink); --accent-soft:var(--tint); --sub:var(--ink-2); --line:var(--rule-2); --card:var(--sheet);
   }
   *{box-sizing:border-box}
   html,body{margin:0}
-  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
-       background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5}
+  body{font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+       color:var(--ink);font-size:15px;line-height:1.55;font-variant-numeric:tabular-nums;
+       background-color:var(--paper);
+       background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+       background-size:24px 24px}
   button,input,select,textarea{font:inherit;color:inherit}
-  header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
-         padding:12px 20px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
-  h1{font-size:18px;margin:0;letter-spacing:-0.2px}
-  h1 small{font-weight:400;color:var(--sub);font-size:13px;margin-left:6px}
-  h2{font-size:16px;margin:0}
-  h3{font-size:14px;margin:16px 0 6px;color:var(--sub);font-weight:600}
-  .chips{display:flex;gap:8px;flex-wrap:wrap}
-  .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:#eef1f5;
-        font-size:13px;color:var(--sub);white-space:nowrap}
-  .chip .dot{width:8px;height:8px;border-radius:50%;background:#b8bfca}
-  .chip.on{color:var(--ink)} .chip.on .dot{background:var(--ok)}
-  .chip.warn .dot{background:var(--warn)}
-  main{display:grid;grid-template-columns:minmax(320px,5fr) 7fr;gap:16px;padding:16px 20px 40px;max-width:1400px;margin:0 auto}
-  @media (max-width:960px){main{grid-template-columns:1fr}}
-  .col{display:flex;flex-direction:column;gap:16px;min-width:0}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  :focus-visible{outline:3px solid var(--hi);outline-offset:1px}
+  h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.2px}
+  h2{font-size:16px}
+  h3{font-size:14px;color:var(--ink-2);margin:18px 0 6px}
+  p{margin:0}
+  .hidden{display:none !important}
+  .hint{color:var(--ink-2);font-size:13px}
   .row{display:flex;gap:8px;align-items:center}
   .wrap{flex-wrap:wrap}
   .between{justify-content:space-between}
-  .hint{color:var(--sub);font-size:13px}
-  .btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 14px;cursor:pointer;transition:background .15s}
-  .btn:hover{background:#f2f4f7}
-  .btn:disabled{opacity:.5;cursor:not-allowed}
-  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-  .btn.primary:hover{background:#2560d6}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
+
+  /* ---------- 머리줄 ---------- */
+  header{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;
+         padding:9px 18px;background:var(--sheet);border-bottom:1.5px solid var(--rule)}
+  .brand{display:flex;align-items:baseline;gap:10px;white-space:nowrap}
+  .brand h1{font-size:18px;font-weight:700}
+  .tagline{font-size:13.5px;color:var(--ink-2)}
+  .verBadge{font-size:11.5px;font-weight:600;color:var(--ink);background:var(--hi);border-radius:3px;padding:1px 6px;align-self:center}
+  .hdrCond{display:flex;align-items:center;gap:8px;flex:1 1 240px;max-width:420px;min-width:200px}
+  .hdrCond label{font-size:13.5px;color:var(--ink-2);white-space:nowrap}
+  .hdrCond input{flex:1;min-width:0;padding:5px 9px;font-size:14px}
+  .hdrCond.set input{font-weight:600;border-color:var(--ink);
+                     background:linear-gradient(transparent 58%,var(--hi) 58%,var(--hi) 92%,transparent 92%) #fff}
+  .hdrCond .clr{border:none;background:none;color:var(--ink-2);font-size:17px;line-height:1;padding:2px 6px;cursor:pointer;border-radius:4px}
+  .hdrCond .clr:hover{color:var(--ink);background:var(--tint)}
+  .hdrCond:not(.set) .clr{display:none}
+  .util{display:flex;align-items:center;gap:4px;margin-left:auto}
+  .tab{font:inherit;cursor:pointer;background:none;border:none;color:inherit;padding:0}
+  .utab{padding:6px 10px;border-radius:4px;color:var(--ink-2);font-size:14.5px;white-space:nowrap}
+  .utab:hover{color:var(--ink);background:var(--tint)}
+  .utab[aria-selected=true]{color:var(--ink);font-weight:600;box-shadow:inset 0 -2px 0 var(--ink)}
+  #recCount{color:var(--ink-3);font-weight:400}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2);white-space:nowrap}
+  .chip .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-3)}
+  .chip.on .dot{background:var(--ok)} .chip.warn .dot{background:var(--warn)}
+  #chipCalls{padding:0 6px}
+  .modeBadge{border:1.5px solid var(--ink);background:var(--sheet);color:var(--ink);border-radius:4px;padding:4px 10px;
+             font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .modeBadge:hover{background:var(--ink);color:#fff}
+
+  /* ---------- 큰 틀 ---------- */
+  main{display:grid;grid-template-columns:minmax(320px,5fr) 7fr;gap:14px;padding:14px 18px 28px;max-width:1400px;margin:0 auto}
+  .col{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .col.left{position:sticky;top:calc(var(--hdrH, 52px) + 14px);align-self:start;max-height:calc(100vh - var(--hdrH, 52px) - 28px)}
+  .card{background:var(--sheet);border:1.5px solid var(--rule);border-radius:8px;padding:14px 16px}
+  @media (max-width:960px){main{grid-template-columns:1fr}.col.left{position:static;max-height:none}}
+
+  /* ---------- 버튼·입력 ---------- */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid var(--rule);background:var(--sheet);
+       border-radius:6px;padding:7px 14px;cursor:pointer;font-weight:500;white-space:nowrap;text-decoration:none;color:var(--ink)}
+  .btn:hover{border-color:var(--ink)}
+  .btn:disabled{opacity:.45;cursor:not-allowed;border-color:var(--rule)}
+  .btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+  .btn.primary:hover{background:#2D3B5E}
+  .btn.primary:disabled{background:var(--ink-3);border-color:var(--ink-3)}
+  .btn.big{padding:12px 22px;font-size:16px;font-weight:600}
+  .btn.sm{padding:5px 11px;font-size:14px}
   .btn.danger{color:var(--bad)}
-  .btn.big{padding:14px 22px;font-size:17px;font-weight:600}
-  .btn.rec{background:var(--bad);border-color:var(--bad);color:#fff}
-  kbd{font-family:inherit;font-size:12px;border:1px solid rgba(255,255,255,.6);border-radius:5px;padding:0 5px;margin-left:6px;opacity:.85}
-  .btn:not(.primary):not(.rec) kbd{border-color:var(--line)}
+  .btn.danger:hover{border-color:var(--bad)}
+  .btn.rec{background:var(--left);border-color:var(--left);color:#fff}
+  kbd{font-family:inherit;font-size:11.5px;font-weight:500;line-height:1.5;border:1px solid currentColor;border-radius:4px;padding:0 5px;margin-left:4px;opacity:.75}
   select,input[type=text],input[type=password],input[type=number],input[type=url],textarea{
-    border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;min-width:0}
+    border:1.5px solid var(--rule);border-radius:6px;padding:7px 10px;background:var(--sheet);min-width:0}
+  select:focus,input:focus,textarea:focus{border-color:var(--ink);outline:none;box-shadow:0 0 0 3px var(--hi)}
   textarea{width:100%;min-height:60px;resize:vertical}
-  label.toggle{display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
-  .videoBox{position:relative;background:#0f141c;border-radius:10px;overflow:hidden;aspect-ratio:4/3;margin:10px 0}
-  .videoBox video{width:100%;height:100%;object-fit:contain;display:block}
-  .videoBox .placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9aa4b5;font-size:14px;text-align:center;padding:20px}
-  .shot{width:100%;max-height:180px;object-fit:contain;background:#0f141c;border-radius:8px;display:none}
-  .log{height:96px;overflow:auto;background:#f7f8fa;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:ui-monospace,Consolas,monospace;font-size:12.5px}
-  .log .out{color:var(--accent)} .log .in{color:var(--ok)} .log .sys{color:var(--sub)}
-  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:-4px -4px 14px;padding:0 4px;overflow-x:auto}
-  .tab{border:none;background:none;padding:10px 12px;cursor:pointer;color:var(--sub);border-bottom:2px solid transparent;white-space:nowrap}
-  .tab small{font-size:11px;opacity:.8;margin-left:3px}
-  .tab[aria-selected=true]{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
-  .panel{display:none} .panel.active{display:block}
-  .lead{margin:0 0 12px;color:var(--sub)}
-  .lead b{color:var(--ink)}
-  .pad{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:8px 0 14px}
-  .pad button{border:1px solid var(--line);background:#fff;border-radius:12px;padding:20px 6px;cursor:pointer;font-size:26px;line-height:1.1}
-  .pad button span{display:block;font-size:14px;margin-top:6px;color:var(--sub)}
-  .pad button:active,.pad button.flash{background:var(--accent-soft);border-color:var(--accent)}
-  .field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
-  .field label{font-size:13px;color:var(--sub)}
-  .condbar{display:flex;gap:8px;align-items:center;background:var(--accent-soft);border-radius:10px;padding:8px 12px;margin-bottom:14px}
-  .condbar input{flex:1}
-  .result{border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:14px}
-  .result .big{font-size:26px;font-weight:700;margin-bottom:6px}
-  .result.err{background:var(--bad-soft);border-color:#f2c9c9}
-  dl.kv{display:grid;grid-template-columns:110px 1fr;gap:4px 10px;margin:8px 0;font-size:14px}
-  dl.kv dt{color:var(--sub)} dl.kv dd{margin:0;word-break:break-all}
-  .judge{display:flex;gap:8px;align-items:center;margin-top:8px}
-  .judge .btn.sel-O{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
-  .judge .btn.sel-X{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
-  details{margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:8px 12px}
-  details summary{cursor:pointer;color:var(--sub)}
-  table{width:100%;border-collapse:collapse;font-size:13.5px}
-  th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
-  th{color:var(--sub);font-weight:600;background:#fafbfc;position:sticky;top:0}
-  .tablebox{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:10px}
-  td.v-O{color:var(--ok);font-weight:600} td.v-X{color:var(--bad);font-weight:600}
-  .note{background:var(--warn-soft);border-radius:10px;padding:10px 12px;font-size:13.5px;margin:10px 0}
-  .note.blue{background:var(--accent-soft)}
-  pre.code{background:#0f141c;color:#e6edf3;border-radius:10px;padding:12px;overflow:auto;font-size:12.5px;line-height:1.45;max-height:360px}
-  ol.steps{padding-left:20px;margin:6px 0} ol.steps li{margin:4px 0}
-  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b2230;color:#fff;padding:10px 16px;border-radius:10px;
-         font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:20}
-  .toast.show{opacity:.95} .toast.bad{background:var(--bad)} .toast.warn{background:#8a5a00} .toast.ok{background:var(--ok)}
-  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-right:6px}
-  .btn:not(.primary) .spinner{border-color:rgba(0,0,0,.2);border-top-color:var(--accent)}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  input[type=checkbox],input[type=radio],input[type=range]{accent-color:var(--ink)}
+  label.toggle{display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;font-size:14.5px}
+  .field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+  .field label{font-size:13.5px;color:var(--ink-2)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   @media (max-width:600px){.grid2{grid-template-columns:1fr}}
-  .hidden{display:none !important}
-  /* 규칙 */
-  .split{display:grid;grid-template-columns:1fr 200px;gap:14px;align-items:start}
+
+  /* ---------- 왼쪽: 카메라 ---------- */
+  .card.camCard{display:flex;flex-direction:column;min-height:0;flex:0 1 auto}
+  .camTop{flex-wrap:nowrap;min-width:0}
+  .camTop h2{white-space:nowrap;flex:none;margin-right:4px}
+  .camTop .btn{flex:none}
+  .camTop select{flex:1 1 auto;min-width:0;max-width:240px;padding:5px 8px;font-size:13px}
+  .camTop .toggle{flex:none;font-size:14px;white-space:nowrap}
+  .videoBox{position:relative;background:var(--screen);border-radius:6px;overflow:hidden;aspect-ratio:4/3}
+  .camCard .videoBox{flex:0 1 auto;min-height:160px;margin-top:10px}
+  @media (max-width:960px){.camCard .videoBox{max-height:55vh}}
+  .videoBox video{width:100%;height:100%;object-fit:contain;display:block}
+  .videoBox .placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#A3AEC6;font-size:14px;text-align:center;padding:20px}
+  .shot{width:100%;max-height:180px;object-fit:contain;background:var(--screen);display:none}
+  .aiShot{position:absolute;right:8px;bottom:8px;width:30%;margin:0;border:2px solid #fff;border-radius:4px;overflow:hidden;
+          background:var(--screen);cursor:zoom-in;z-index:2}
+  .aiShot img.shot{display:block !important;width:100%;max-height:none}
+  .aiShot figcaption{position:absolute;left:0;top:0;background:var(--ink);color:#fff;font-size:11px;padding:1px 7px;border-bottom-right-radius:4px}
+  .aiShot .x{position:absolute;right:3px;top:3px;width:20px;height:20px;line-height:18px;padding:0;border:none;border-radius:50%;
+             background:var(--ink);color:#fff;font-size:13px;cursor:pointer}
+  .aiShot.big{right:0;bottom:0;width:100%;height:100%;border:none;border-radius:0;cursor:zoom-out}
+  .aiShot.big img.shot{height:100%;object-fit:contain}
+
+  /* ---------- 왼쪽: micro:bit ---------- */
+  .card.mbCard{flex:none}
+  .mbTop{flex-wrap:nowrap;min-width:0}
+  .mbTop h2{flex:none;margin-right:4px}
+  .mbTop #serialInfo{margin-left:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .mbSub{display:flex;align-items:center;gap:8px;margin:10px 0 6px;flex-wrap:wrap}
+  .mbSub h3{margin:0;flex:1 1 auto;white-space:nowrap;font-weight:500}
+  .mbSub .toggle{font-size:14px}
+  .mbSub select{padding:3px 6px;font-size:13px}
+  .log{height:68px;overflow:auto;background:var(--paper);border:1.5px solid var(--rule-2);border-radius:6px;padding:6px 8px;
+       font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:12.5px;line-height:1.45}
+  .log .out{color:var(--ink)} .log .in{color:var(--ok)} .log .sys{color:var(--ink-3)}
+
+  /* ---------- 오른쪽: 시작하기 (준비물 체크) ---------- */
+  .startBar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:4px 14px;align-items:center;
+            border-bottom:1.5px dashed var(--rule);padding:0 0 12px;margin:0 0 14px}
+  .startBar .stTitle{display:none;font-weight:700;color:var(--ok);white-space:nowrap}
+  .startBar.ready{grid-template-columns:auto repeat(3,minmax(0,1fr)) auto}
+  .startBar.ready .stTitle{display:block}
+  .startBar .step{display:flex;align-items:center;gap:9px;min-width:0}
+  .startBar .num{flex:none;width:20px;height:20px;border:1.75px solid var(--ink);border-radius:3px;color:var(--ink);
+                 font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}
+  .startBar .txt{flex:1;min-width:0;line-height:1.25}
+  .startBar .txt b{display:block;font-size:14px;font-weight:600}
+  .startBar .txt small{display:block;font-size:12px;color:var(--ink-2)}
+  .startBar .step .btn{flex:none;padding:3px 10px;font-size:13px}
+  .startBar .step.done .num{background:var(--ok);border-color:var(--ok);color:#fff}
+  .startBar .step.done .num::after{content:"✓";font-size:13px} .startBar .step.done .num span{display:none}
+  .startBar .step.done .btn{display:none}
+  .startBar .step.done small{color:var(--ok)}
+  .startBar .step.warn .num{border-color:var(--warn);color:var(--warn)}
+  .startBar .step.warn small{color:var(--warn);font-weight:600}
+  .startBar .step.busy small::after{content:" …"}
+  .startBar .x{border:none;background:none;color:var(--ink-3);font-size:17px;cursor:pointer;padding:0 6px;border-radius:4px}
+  .startBar .x:hover{color:var(--ink);background:var(--tint)}
+
+  /* ---------- 오른쪽: 두뇌 고르기 (이 화면에서 하나뿐인 강조) ---------- */
+  .brains{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:2px solid var(--ink);border-radius:8px;margin:0 0 20px;background:var(--sheet)}
+  .brain{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;padding:9px 4px 8px;color:var(--ink)}
+  .brain + .brain{border-left:1.5px solid var(--ink)}
+  .brain:first-child{border-radius:6px 0 0 6px} .brain:last-child{border-radius:0 6px 6px 0}
+  .brain .ico{width:26px;height:26px;stroke:var(--ink-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;margin-bottom:3px}
+  .brain b{font-size:15px;font-weight:600;white-space:nowrap}
+  .brain small{font-size:11.5px;color:var(--ink-2)}
+  .brain:hover{background:var(--tint)}
+  .brain[aria-selected=true]{background:var(--ink);color:#fff}
+  .brain[aria-selected=true] .ico{stroke:#fff}
+  .brain[aria-selected=true] small{color:#C8D1E6}
+  .brain[aria-selected=true]::after{content:"";position:absolute;left:50%;bottom:-10px;margin-left:-9px;
+                                    border:9px solid transparent;border-bottom:none;border-top:9px solid var(--ink)}
+  .brain .chip{position:absolute;top:7px;right:8px}
+  .brain .chip span:last-child{display:none}
+  .brain .chip .dot{width:8px;height:8px;background:transparent;box-shadow:inset 0 0 0 1.5px var(--ink-3)}
+  .brain .chip.on .dot{background:var(--ok);box-shadow:none}
+  .brain[aria-selected=true] .chip .dot{box-shadow:inset 0 0 0 1.5px #C8D1E6}
+  .brain[aria-selected=true] .chip.on .dot{box-shadow:none}
+
+  /* ---------- 오른쪽: 탭 내용 ---------- */
+  .panel{display:none} .panel.active{display:block}
+  .lead{margin:0 0 14px;color:var(--ink-2)}
+  .pad{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:4px 0 14px}
+  .pad button{display:flex;flex-direction:column;align-items:center;gap:4px;border:1.5px solid var(--rule);background:var(--sheet);
+              border-radius:8px;padding:12px 6px 10px;cursor:pointer;position:relative}
+  .pad button:hover{border-color:var(--ink)}
+  .pad button svg{width:76px;height:40px;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .pad button span{font-size:14.5px;font-weight:600}
+  .pad button i{position:absolute;top:6px;right:7px;font-style:normal;font-size:11px;color:var(--ink-3);border:1px solid var(--rule);border-radius:3px;padding:0 4px;line-height:1.5}
+  .pad button:active,.pad button.flash{background:var(--tint);border-color:var(--ink)}
+  .pad .tray{stroke:var(--ink)} .pad .box{stroke:var(--ink-3)} .pad .pivot{fill:var(--ink-3);stroke:none}
+  .pad [data-cmd=L] .tray{stroke:var(--left)} .pad [data-cmd=R] .tray{stroke:var(--right)}
+  .pad [data-cmd=L] .box.l{stroke:var(--left)} .pad [data-cmd=R] .box.r{stroke:var(--right)}
+  .pad [data-cmd=N] .no{stroke:var(--ink-2)}
+
+  .result{border:1.5px solid var(--ink);border-radius:8px;padding:14px 16px;margin-top:16px;background:var(--sheet)}
+  .result .big{font-size:24px;font-weight:700;margin-bottom:6px}
+  .result.err{border-color:var(--bad);background:var(--bad-soft)}
+  .reason{background:var(--paper);border-left:3px solid var(--ink-2);padding:7px 10px;margin:4px 0 6px;font-size:14px;white-space:pre-wrap}
+  .result .reason{margin-top:0}
+  dl.kv{display:grid;grid-template-columns:96px 1fr;gap:4px 12px;margin:8px 0;font-size:14px}
+  dl.kv dt{color:var(--ink-2)} dl.kv dd{margin:0;word-break:break-all}
+  .judge{display:flex;gap:8px;align-items:center;margin-top:10px}
+  .judge .btn{padding:5px 14px}
+  .judge .btn.sel-O{background:var(--ok-soft);border-color:var(--ok);color:var(--ok);font-weight:600}
+  .judge .btn.sel-X{background:var(--bad-soft);border-color:var(--bad);color:var(--bad);font-weight:600}
+
+  details{margin-top:18px;border-top:1.5px solid var(--rule-2);padding-top:10px}
+  details > summary{cursor:pointer;color:var(--ink-2);font-weight:600;font-size:14px;list-style:none;display:flex;align-items:center;gap:8px}
+  details > summary::-webkit-details-marker{display:none}
+  details > summary::before{content:"";width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;
+                            transform:rotate(-45deg);transition:transform .15s;margin:0 2px}
+  details[open] > summary::before{transform:rotate(45deg)}
+  details > summary:hover{color:var(--ink)}
+  details[open] > summary{margin-bottom:10px}
+
+  .outRow{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:12px;font-size:14px}
+  .outRow > label{color:var(--ink-2);font-size:13.5px}
+  .outRow select{padding:5px 8px;font-size:13.5px}
+  .outNames{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px;color:var(--ink-2)}
+  .outNames input{width:92px;padding:5px 8px;font-size:13.5px}
+  .outNames input.wide{width:220px}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{border-bottom:1px solid var(--rule-2);padding:6px 8px;text-align:left;vertical-align:top}
+  th{color:var(--ink-2);font-weight:600;background:var(--tint);position:sticky;top:0}
+  .tablebox{max-height:340px;overflow:auto;border:1.5px solid var(--rule);border-radius:6px}
+  td.v-O{color:var(--ok);font-weight:600} td.v-X{color:var(--bad);font-weight:600}
+  .note{background:var(--warn-soft);border-left:3px solid #D9A400;padding:9px 12px;font-size:13.5px;margin:12px 0}
+  .note.blue{background:var(--tint);border-left-color:var(--ink-2)}
+  pre.code{background:var(--screen);color:#E3E8F4;border-radius:6px;padding:12px;overflow:auto;font-size:12.5px;line-height:1.45;max-height:360px}
+  ol.steps{padding-left:22px;margin:6px 0} ol.steps li{margin:5px 0}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:6px;
+         font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:20}
+  .toast.show{opacity:.97} .toast.bad{background:var(--bad)} .toast.warn{background:#7A4A00} .toast.ok{background:var(--ok)}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;
+           animation:spin .8s linear infinite;vertical-align:-2px;margin-right:6px}
+  .btn:not(.primary) .spinner{border-color:rgba(31,42,68,.2);border-top-color:var(--ink)}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ---------- 규칙 ---------- */
+  .split{display:grid;grid-template-columns:1fr 200px;gap:16px;align-items:start}
   @media (max-width:640px){.split{grid-template-columns:1fr}}
-  .viewBox{width:200px;height:150px;background:#0f141c;border-radius:10px;display:block}
-  .swatches{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-  .sw{width:30px;height:30px;border-radius:8px;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}
-  .sw.sel{box-shadow:0 0 0 3px var(--accent)}
-  .swatches input[type=color]{width:36px;height:32px;padding:0 2px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer}
-  .counts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 12px}
-  .ruleSentence{background:var(--accent-soft);border-radius:10px;padding:10px 14px;margin:0 0 14px;font-size:15.5px;line-height:1.9}
-  .ruleSentence .kw{color:var(--sub);font-weight:600;margin-right:4px}
+  .viewBox{width:200px;height:150px;background:var(--screen);border-radius:6px;display:block}
+  .ruleSentence{background:var(--tint);border-radius:6px;padding:10px 14px;margin:0 0 12px;font-size:15.5px;line-height:1.9}
+  .ruleSentence .kw{color:var(--ink-2);font-weight:600;margin-right:4px}
   .ruleSentence .dot{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:-2px;margin-right:4px;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
-  @media (max-width:600px){.counts{grid-template-columns:1fr}}
-  .cnt{border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;font-size:14px}
-  .cnt i{width:14px;height:14px;border-radius:4px;display:inline-block;flex:none}
-  .cnt b{margin-left:auto;font-size:18px;white-space:nowrap}
-  /* 학습 모델 */
+  .counts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 10px}
+  #panel-rule .counts{grid-template-columns:1fr 1fr}
+  #panel-rule .counts .cnt:last-child{grid-column:1/-1}
+  .cnt{border:1.5px solid var(--rule-2);border-radius:6px;padding:7px 10px;display:flex;align-items:center;gap:8px;font-size:14px}
+  .cnt i{width:13px;height:13px;border-radius:50%;display:inline-block;flex:none}
+  .cnt b{margin-left:auto;font-size:17px;white-space:nowrap}
+  .swatches{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+  .sw{width:28px;height:28px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1.5px var(--rule);cursor:pointer;padding:0}
+  .sw.sel{box-shadow:0 0 0 3px var(--ink)}
+  .swatches input[type=color]{width:36px;height:30px;padding:0 2px;border:1.5px solid var(--rule);border-radius:6px;background:#fff;cursor:pointer}
+
+  /* ---------- 학습 모델 ---------- */
   .tmRows{display:flex;flex-direction:column;gap:6px;margin:6px 0 12px}
   .tmRow{display:grid;grid-template-columns:minmax(80px,1.1fr) 2fr minmax(170px,1.4fr);gap:10px;align-items:center;
-         border:1px solid var(--line);border-radius:10px;padding:8px 10px}
-  .tmRow.top{border-color:var(--accent);background:var(--accent-soft)}
+         border:1.5px solid var(--rule-2);border-radius:6px;padding:7px 10px}
+  .tmRow.top{border-color:var(--ink);background:var(--tint)}
   .tmName{font-weight:600;word-break:break-all}
-  .tmBar{position:relative;height:22px;background:#eef1f5;border-radius:6px;overflow:hidden}
-  .tmBar i{position:absolute;left:0;top:0;bottom:0;background:#9db8f5;border-radius:6px;width:0;transition:width .2s}
-  .tmRow.top .tmBar i{background:var(--accent)}
-  .tmBar b{position:absolute;right:4px;top:2px;font-size:12.5px;font-weight:600;line-height:18px;
-           background:rgba(255,255,255,.9);padding:0 6px;border-radius:4px}
+  .tmBar{position:relative;height:20px;background:var(--rule-2);border-radius:3px;overflow:hidden}
+  .tmBar i{position:absolute;left:0;top:0;bottom:0;background:#9AA8C4;width:0;transition:width .2s}
+  .tmRow.top .tmBar i{background:var(--ink)}
+  .tmBar b{position:absolute;right:4px;top:1px;font-size:12px;font-weight:600;line-height:18px;background:rgba(255,255,255,.92);padding:0 5px;border-radius:3px}
   .tmAct{display:flex;gap:6px;align-items:center}
   .tmAct select{flex:1;min-width:0}
   .tmAct input{width:70px}
   @media (max-width:600px){.tmRow{grid-template-columns:1fr}}
-  /* VLM */
+
+  /* ---------- VLM ---------- */
   .presetRow{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
-  .presetRow .btn{padding:4px 10px;font-size:13px}
-  .reason{background:#f7f8fa;border-left:3px solid var(--accent);border-radius:6px;padding:8px 10px;margin:6px 0 4px;font-size:14px;white-space:pre-wrap}
-  .fiveSum{font-weight:600;margin:8px 0}
-  /* 시연 */
-  .demoTop{display:grid;grid-template-columns:230px 1fr;gap:14px;align-items:center;margin-bottom:12px}
+  .presetRow .btn{padding:3px 10px;font-size:13px;font-weight:400}
+  .fiveSum{font-weight:600;margin:4px 0 8px}
+
+  /* ---------- 시연 ---------- */
+  .demoTop{display:grid;grid-template-columns:220px 1fr;gap:14px;align-items:center;margin-bottom:12px}
   @media (max-width:640px){.demoTop{grid-template-columns:1fr}}
-  .gauge{border:1px solid var(--line);border-radius:12px;padding:10px 12px;text-align:center}
-  .trayViz{height:64px;position:relative}
-  .trayViz .bar{position:absolute;left:18px;right:18px;top:28px;height:8px;background:var(--ink);border-radius:4px;transition:transform .08s}
-  .trayViz .pivot{position:absolute;left:50%;top:38px;width:0;height:0;margin-left:-9px;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:16px solid var(--accent)}
-  .trayViz .boxL,.trayViz .boxR{position:absolute;bottom:0;width:30px;height:14px;border:2px solid var(--sub);border-top:none}
-  .trayViz .boxL{left:0} .trayViz .boxR{right:0}
+  .gauge{border:1.5px solid var(--rule);border-radius:8px;padding:10px 12px;text-align:center}
   .gauge b{font-size:22px}
+  .trayViz{height:64px;position:relative}
+  .trayViz .bar{position:absolute;left:18px;right:18px;top:28px;height:6px;background:var(--ink);border-radius:3px;transition:transform .08s}
+  .trayViz .pivot{position:absolute;left:50%;top:36px;width:0;height:0;margin-left:-9px;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:15px solid var(--ink-3)}
+  .trayViz .boxL,.trayViz .boxR{position:absolute;bottom:0;width:30px;height:14px;border:2px solid var(--ink-3);border-top:none}
+  .trayViz .boxL{left:0;border-color:var(--left)} .trayViz .boxR{right:0;border-color:var(--right)}
   .ctlRow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .ctlRow .btn{padding:12px 6px}
+  .ctlRow .btn{padding:11px 6px}
   .demoList{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
-  .demoItem{border:1px solid var(--line);border-radius:10px;padding:6px;font-size:13px;position:relative;background:#fff}
-  .demoItem img{width:100%;border-radius:6px;display:block;background:#0f141c;aspect-ratio:4/3;object-fit:cover}
-  .demoItem .x{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:6px;cursor:pointer;padding:0 7px;font-size:13px}
-  .demoItem.ref{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+  .demoItem{border:1.5px solid var(--rule-2);border-radius:6px;padding:6px;font-size:13px;position:relative;background:var(--sheet)}
+  .demoItem img{width:100%;border-radius:4px;display:block;background:var(--screen);aspect-ratio:4/3;object-fit:cover}
+  .demoItem .x{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.94);border:1px solid var(--rule);border-radius:4px;cursor:pointer;padding:0 7px;font-size:13px}
+  .demoItem.ref{border-color:var(--ink)}
   .demoItem.old{opacity:.55}
   .cmpRow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .cmpRow figure{margin:0}
-  .cmpRow img{width:100%;border-radius:8px;background:#0f141c;aspect-ratio:4/3;object-fit:cover;display:block}
-  .cmpRow figcaption{font-size:13px;color:var(--sub);text-align:center;margin-top:4px}
+  .cmpRow img{width:100%;border-radius:4px;background:var(--screen);aspect-ratio:4/3;object-fit:cover;display:block}
+  .cmpRow figcaption{font-size:13px;color:var(--ink-2);text-align:center;margin-top:4px}
   .recState{font-weight:600}
-  .recState.on{color:var(--bad)}
+  .recState.on{color:var(--left)}
 
-  /* ---- 노트북 한 화면 배치 (2026-11-09): 왼쪽 = 로봇의 눈·몸(고정), 오른쪽 = 두뇌 ---- */
-  header{padding:8px 16px}
-  h1{font-size:17px}
-  main{gap:14px;padding:12px 16px 28px}
-  .col.left{position:sticky;top:calc(var(--hdrH, 50px) + 12px);align-self:start;gap:12px;
-            max-height:calc(100vh - var(--hdrH, 50px) - 24px)}
-  .btn.sm{padding:5px 12px;font-size:14px;border-radius:8px}
-  .card.camCard{display:flex;flex-direction:column;min-height:0;flex:0 1 auto;padding:12px 14px}
-  .camTop{flex-wrap:nowrap;min-width:0}
-  .camTop h2{margin-right:2px;white-space:nowrap;flex:none}
-  .camTop .btn{white-space:nowrap;flex:none}
-  .camTop .toggle{flex:none}
-  .camTop select{flex:1 1 auto;min-width:0;max-width:240px;padding:5px 8px;font-size:13px}
-  .camTop .toggle{font-size:14px;white-space:nowrap}
-  .camCard .videoBox{flex:0 1 auto;min-height:160px;margin:8px 0 0}
-  .card.mbCard{flex:none;padding:12px 14px}
-  .mbTop{flex-wrap:nowrap;min-width:0}
-  .mbTop #serialInfo{margin-left:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-  .mbSub{display:flex;align-items:center;gap:8px;margin:8px 0 4px;flex-wrap:wrap}
-  .mbSub h3{margin:0;flex:1 1 auto;white-space:nowrap}
-  .mbSub .toggle{font-size:14px}
-  .mbSub select{padding:4px 8px;font-size:13px}
-  .mbCard .log{height:68px}
-  .aiShot{position:absolute;right:8px;bottom:8px;width:30%;margin:0;border:2px solid #fff;border-radius:8px;overflow:hidden;
-          background:#0f141c;cursor:zoom-in;box-shadow:0 2px 10px rgba(0,0,0,.4);z-index:2}
-  .aiShot img.shot{display:block !important;width:100%;max-height:none;border-radius:0}
-  .aiShot figcaption{position:absolute;left:0;top:0;background:rgba(15,20,28,.78);color:#fff;font-size:11px;padding:1px 7px;border-bottom-right-radius:6px}
-  .aiShot .x{position:absolute;right:3px;top:3px;width:20px;height:20px;line-height:18px;padding:0;border:none;border-radius:50%;
-             background:rgba(15,20,28,.78);color:#fff;font-size:13px;cursor:pointer}
-  .aiShot.big{right:0;bottom:0;width:100%;height:100%;border:none;border-radius:0;cursor:zoom-out}
-  .aiShot.big img.shot{height:100%;object-fit:contain}
-  .condbar{padding:6px 10px;margin-bottom:10px}
-  .condbar input{padding:6px 10px}
-  .tab{padding:8px 10px}
-  @media (max-width:960px){.col.left{position:static;max-height:none} .camCard .videoBox{max-height:55vh}}
-
-  /* 실험 조건: 머리줄 안 작은 칸 */
-  .hdrCond{display:flex;align-items:center;gap:6px;flex:1 1 240px;max-width:440px;min-width:200px;
-           background:var(--accent-soft);border-radius:9px;padding:3px 4px 3px 10px}
-  .hdrCond label{font-size:13px;white-space:nowrap;color:var(--accent);font-weight:600}
-  .hdrCond input{flex:1;min-width:0;padding:4px 8px;font-size:13.5px;border-color:#cfdcf7}
-  .hdrCond input:not(:placeholder-shown){font-weight:600;border-color:var(--accent)}
-  @media (max-width:1320px){h1 small{display:none}}
-  /* 서보 핀 선택 */
-  .pinPick{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;background:var(--warn-soft);border-radius:10px;padding:10px 12px;margin:14px 0 4px}
-
-  /* 도움말 */
+  /* ---------- 도움말 ---------- */
   .hexGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0 4px}
   @media (max-width:640px){.hexGrid{grid-template-columns:1fr}}
-  .hexCard{border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
-  .hexCard.main{border-color:var(--accent);background:var(--accent-soft)}
+  .hexCard{border:1.5px solid var(--rule);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+  .hexCard.main{border-color:var(--ink)}
   .hexCard b{font-size:15px}
-  .hexCard p{margin:0;font-size:13.5px;color:var(--sub)}
-  .hexCard .btn{align-self:flex-start;margin-top:6px}
-  dl.fix{display:grid;grid-template-columns:minmax(150px,34%) 1fr;gap:6px 12px;margin:6px 0;font-size:14px}
-  dl.fix dt{font-weight:600} dl.fix dd{margin:0;color:var(--sub)}
+  .hexCard p{font-size:13.5px;color:var(--ink-2)}
+  .hexCard .btn{align-self:flex-start;margin-top:8px}
+  dl.fix{display:grid;grid-template-columns:minmax(150px,34%) 1fr;gap:6px 14px;margin:6px 0;font-size:14px}
+  dl.fix dt{font-weight:600} dl.fix dd{margin:0;color:var(--ink-2)}
   @media (max-width:640px){dl.fix{grid-template-columns:1fr} dl.fix dd{margin-bottom:6px}}
-  details.adv{margin-top:16px}
-  details.adv[open] summary{margin-bottom:6px}
+  .pinPick{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;background:var(--warn-soft);border-radius:6px;padding:10px 12px;margin:4px 0}
 
-  /* 강사용 / 실습용 화면 */
+  /* ---------- 강사용 / 실습용 ---------- */
   body.learner .teacherOnly{display:none !important}
   body:not(.learner) .learnerOnly{display:none !important}
-  .modeBadge{border:1px solid #e3c48a;background:var(--warn-soft);color:#7a4f00;border-radius:999px;padding:3px 10px;
-             font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
-  .modeBadge:hover{background:#f3e2c0}
-  .modeLink{color:var(--sub);font-size:12.5px;text-decoration:underline;cursor:pointer;background:none;border:none;padding:0}
-  .unlock{position:fixed;inset:0;background:rgba(15,20,28,.45);display:flex;align-items:center;justify-content:center;z-index:30}
-  .unlockCard{background:#fff;border-radius:14px;padding:20px 22px;width:min(360px,90vw);box-shadow:0 10px 30px rgba(0,0,0,.25)}
-  .unlockCard h2{margin-bottom:4px}
-  .unlockCard input{width:100%;margin-top:8px}
-  .unlockCard .row{justify-content:flex-end;margin-top:6px}
+  .modeLink{color:var(--ink-2);font-size:12.5px;text-decoration:underline;cursor:pointer;background:none;border:none;padding:0}
+  .unlock{position:fixed;inset:0;background:rgba(14,21,39,.5);display:flex;align-items:center;justify-content:center;z-index:30}
+  .unlockCard{background:var(--sheet);border:2px solid var(--ink);border-radius:8px;padding:20px 22px;width:min(360px,90vw)}
+  .unlockCard h2{margin-bottom:6px}
+  .unlockCard input{width:100%;margin-top:10px}
+  .unlockCard .row{justify-content:flex-end;margin-top:8px}
 
-  /* 실험 조건: 적혀 있으면 눈에 띄게, × 로 비우기 */
-  .hdrCond.set{background:#fff1cc;box-shadow:0 0 0 1px #e9c46a inset}
-  .hdrCond.set label{color:#8a5a00}
-  .hdrCond.set input{border-color:#e0b04a}
-  .hdrCond .clr{border:none;background:none;color:#8a5a00;font-size:16px;line-height:1;padding:2px 6px;cursor:pointer;border-radius:6px}
-  .hdrCond .clr:hover{background:#f6dfa6}
-  .hdrCond:not(.set) .clr{display:none}
-  .verBadge{display:inline-block;font-size:11.5px;font-weight:600;color:#fff;background:#7b5cd6;border-radius:6px;padding:1px 7px;vertical-align:2px;margin-left:4px}
-
-  /* v2: 시작하기 띠 */
-  .startBar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:8px;align-items:stretch;
-            background:#f4f1fd;border:1px solid #ddd3f7;border-radius:12px;padding:8px;margin:-4px 0 12px}
-  .startBar .stTitle{display:none;align-items:center;font-weight:700;color:var(--ok);padding:0 4px 0 6px;white-space:nowrap}
-  .startBar.ready .stTitle{display:flex}
-  .startBar .step{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px 8px;min-width:0}
-  .startBar .num{flex:none;width:22px;height:22px;border-radius:50%;background:#e9e4fb;color:#5b3fc4;font-weight:700;font-size:13px;
-                 display:flex;align-items:center;justify-content:center}
-  .startBar .txt{flex:1;min-width:0;line-height:1.25}
-  .startBar .txt b{display:block;font-size:13.5px}
-  .startBar .txt small{display:block;font-size:11.5px;color:var(--sub);line-height:1.3}
-  .startBar .step .btn{flex:none;padding:4px 10px;font-size:13px}
-  .startBar .step.done{border-color:#b9dfc0;background:var(--ok-soft)}
-  .startBar .step.done .num{background:var(--ok);color:#fff}
-  .startBar .step.done .num::after{content:"✓"} .startBar .step.done .num span{display:none}
-  .startBar .step.done .btn{display:none}
-  .startBar .step.warn{border-color:#efc98a;background:var(--warn-soft)}
-  .startBar .step.warn .num{background:var(--warn);color:#fff}
-  .startBar .step.busy small::after{content:" …"}
-  .startBar .x{border:none;background:none;color:var(--sub);font-size:16px;cursor:pointer;padding:0 6px;border-radius:6px;align-self:center}
-  .startBar .x:hover{background:#e9e4fb}
-  .startBar.ready{background:var(--ok-soft);border-color:#b9dfc0;grid-template-columns:auto repeat(3,minmax(0,1fr)) auto}
-  .startBar.ready .stTitle{color:var(--ok)}
-  /* 규칙: 지금 판단을 한 줄 전체로 */
-  #panel-rule .counts{grid-template-columns:1fr 1fr}
-  #panel-rule .counts .cnt:last-child{grid-column:1/-1}
-  /* v2: 더 해 보기 접기 */
-  details.more{margin-top:14px;background:#fafbfc}
-  details.more summary{font-weight:600}
-  details.more[open]{background:#fff}
-  details.more[open] summary{margin-bottom:8px}
-
-  /* v2: 보낼 것(분류 명령 / 이름) */
-  .outRow{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:10px;font-size:14px}
-  .outRow > label{color:var(--sub);font-size:13px}
-  .outRow select{padding:5px 8px;font-size:13.5px}
-  .outNames{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px;color:var(--sub)}
-  .outNames input{width:92px;padding:5px 8px;font-size:13.5px}
-  .outNames input.wide{width:220px}
-  .result .reason{margin-top:0}
+  @media (max-width:1320px){.tagline{display:none}}
+  @media (max-width:760px){.brain small{display:none}.brain b{font-size:13.5px}.pad{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body class="learner">
 <header>
-  <h1>피지컬 AI 실습 웹앱 <span class="verBadge" title="v1과 따로 만드는 새 판 — 기록·설정도 v1과 따로 저장돼요">v2 시험판</span><small>micro:bit 분류 로봇 · 같은 몸, 다른 두뇌</small></h1>
+  <div class="brand"><h1>피지컬 AI 실습</h1><span class="tagline">같은 몸, 다른 두뇌</span><span class="verBadge" title="v1과 따로 만드는 새 판이에요. 기록과 설정도 v1과 따로 저장돼요">v2 시험판</span></div>
   <div class="hdrCond" title="지금 시험하는 조건을 적어 두면 그 뒤 기록에 붙고, 기록 탭에서 조건별 성공률로 묶어 보여 줘요. 이 창을 닫으면 비워져요">
     <label for="condition">실험 조건</label>
     <input type="text" id="condition" placeholder="예: 처음 보는 물건, 조명 변경">
     <button class="clr" id="btnCondClear" title="실험 조건 비우기">×</button>
   </div>
-  <div class="chips">
-    <span class="chip" id="chipMb"><span class="dot"></span><span>micro:bit 미연결</span></span>
-    <span class="chip" id="chipCam"><span class="dot"></span><span>카메라 꺼짐</span></span>
-    <span class="chip" id="chipTm"><span class="dot"></span><span>학습 모델 없음</span></span>
-    <span class="chip" id="chipVlm"><span class="dot"></span><span>VLM 미설정</span></span>
+  <nav class="util" aria-label="기록과 도움말">
+    <button class="tab utab" role="tab" data-tab="records" aria-selected="false">기록 <span id="recCount"></span></button>
+    <button class="tab utab" role="tab" data-tab="help" aria-selected="false">도움말</button>
+    <button class="tab utab teacherOnly" role="tab" data-tab="settings" aria-selected="false">설정</button>
     <span class="chip teacherOnly" id="chipCalls"><span class="dot"></span><span>호출 0</span></span>
-    <button class="modeBadge teacherOnly" id="btnLeaveTeacher" title="누르면 연수생이 보는 실습용 화면으로 바뀌어요">강사용 · 잠그기</button>
-  </div>
+    <button class="modeBadge teacherOnly" id="btnLeaveTeacher" title="연수생이 보는 실습용 화면으로 바꾸고 잠가요">강사 화면 잠그기</button>
+  </nav>
+  <div class="hidden"><span class="chip" id="chipMb"><span class="dot"></span><span>micro:bit 미연결</span></span><span class="chip" id="chipCam"><span class="dot"></span><span>카메라 꺼짐</span></span></div>
 </header>
 
 <main>
@@ -308,13 +356,13 @@
       <div class="row camTop">
         <h2>카메라</h2>
         <button class="btn sm" id="btnCam">카메라 켜기</button>
-        <select id="camSelect" title="카메라 선택 — 고른 카메라는 다음에도 먼저 켜져요" class="hidden"></select>
+        <select id="camSelect" title="카메라를 고르면 다음에도 이 카메라가 먼저 켜져요" class="hidden"></select>
         <label class="toggle" title="미리보기와 VLM에게 보내는 사진이 함께 뒤집혀요"><input type="checkbox" id="mirror"> 좌우 반전</label>
       </div>
       <div class="videoBox">
         <video id="video" playsinline muted></video>
         <div class="placeholder" id="camPlaceholder">카메라가 꺼져 있어요<br>위의 '카메라 켜기'를 누르세요</div>
-        <figure class="aiShot hidden" id="aiShot" title="AI가 마지막으로 본 사진 — 누르면 크게 보기">
+        <figure class="aiShot hidden" id="aiShot" title="AI가 마지막으로 본 사진이에요. 누르면 크게 보여요">
           <img id="lastShot" class="shot" alt="마지막으로 AI가 본 사진">
           <figcaption>AI가 본 사진</figcaption>
           <button class="x" id="aiShotX" title="숨기기 (다음 판단 때 다시 나와요)">×</button>
@@ -331,7 +379,7 @@
         <span class="hint" id="serialInfo">연결 안 됨</span>
       </div>
       <div class="mbSub">
-        <h3>주고받은 신호 (→ 보냄, ← 응답)</h3>
+        <h3>주고받은 신호</h3>
         <label class="toggle" title="L·R로 접시를 기울인 뒤 C를 보내 수평으로 되돌려요"><input type="checkbox" id="autoReturn"> 분류 뒤 수평 복귀</label>
         <select id="returnDelay" title="기울인 뒤 수평으로 돌아오기까지 기다리는 시간">
           <option value="1">1초 뒤</option><option value="1.5">1.5초 뒤</option><option value="2">2초 뒤</option><option value="3">3초 뒤</option>
@@ -347,7 +395,7 @@
         <div class="stTitle">시작하기</div>
         <div class="step" id="stFile"><span class="num"><span>1</span></span>
           <span class="txt"><b>파일 넣기</b><small id="stFileSub">받은 파일을 MICROBIT 드라이브에</small></span>
-          <button class="btn hexDl" data-src="../hex/command_P1.hex" data-name="심화_명령받기_P1.hex" title="명령 받기 파일(심화_명령받기_P1.hex) 내려받기">⬇ 받기</button></div>
+          <button class="btn hexDl" data-src="../hex/command_P1.hex" data-name="심화_명령받기_P1.hex" title="명령 받기 파일(심화_명령받기_P1.hex) 내려받기">받기</button></div>
         <div class="step" id="stMb"><span class="num"><span>2</span></span>
           <span class="txt"><b>micro:bit 연결</b><small id="stMbSub">USB로 꽂고 누르기</small></span>
           <button class="btn primary" id="btnStartMb">연결</button></div>
@@ -356,25 +404,22 @@
           <button class="btn" id="btnStartCam">켜기</button></div>
         <button class="x" id="startClose" title="닫기 (이 창에서는 다시 안 보여요)">×</button>
       </div>
-      <div class="tabs" role="tablist">
-        <button class="tab" role="tab" data-tab="manual" aria-selected="true">사람<small>1차시</small></button>
-        <button class="tab" role="tab" data-tab="rule" aria-selected="false">규칙<small>1차시</small></button>
-        <button class="tab" role="tab" data-tab="tm" aria-selected="false">학습 모델<small>2차시</small></button>
-        <button class="tab" role="tab" data-tab="vlm" aria-selected="false">VLM<small>3·4차시</small></button>
-        <button class="tab" role="tab" data-tab="demo" aria-selected="false">시연<small>5차시</small></button>
-        <button class="tab" role="tab" data-tab="records" aria-selected="false">기록 <span id="recCount"></span></button>
-        <button class="tab teacherOnly" role="tab" data-tab="settings" aria-selected="false">설정</button>
-        <button class="tab" role="tab" data-tab="help" aria-selected="false">도움말</button>
+      <div class="tabs brains" role="tablist" aria-label="두뇌 고르기">
+        <button class="tab brain" role="tab" data-tab="manual" aria-selected="true"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7.5" r="3.5"/><path d="M5 20.5c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg><b>사람</b><small>1차시</small></button>
+        <button class="tab brain" role="tab" data-tab="rule" aria-selected="false"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="12" r="4"/><path d="M14 12h7M18 8.5l3.5 3.5-3.5 3.5"/></svg><b>규칙</b><small>1차시</small></button>
+        <button class="tab brain" role="tab" data-tab="tm" aria-selected="false"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="6.5" r="2"/><circle cx="5" cy="17.5" r="2"/><circle cx="12.5" cy="12" r="2"/><circle cx="20" cy="12" r="2"/><path d="M6.8 7.6l4 3.1M6.8 16.4l4-3.1M14.5 12H18"/></svg><b>학습 모델</b><small>2차시</small><span class="chip" id="chipTm" title="학습 모델을 불러오면 초록색"><span class="dot"></span><span>학습 모델 없음</span></span></button>
+        <button class="tab brain" role="tab" data-tab="vlm" aria-selected="false"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H11l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z"/><path d="M7.8 10c1.3-1.7 2.7-2.5 4.2-2.5s2.9.8 4.2 2.5c-1.3 1.7-2.7 2.5-4.2 2.5S9.1 11.7 7.8 10z"/></svg><b>VLM</b><small>3·4차시</small><span class="chip" id="chipVlm" title="VLM 연결이 설정되면 초록색"><span class="dot"></span><span>VLM 미설정</span></span></button>
+        <button class="tab brain" role="tab" data-tab="demo" aria-selected="false"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg><b>시연</b><small>5차시</small></button>
       </div>
 
       <!-- 사람 -->
       <div class="panel active" id="panel-manual">
-        <p class="lead"><b>사람이 두뇌</b> — 카메라 화면을 보고 사람이 판단해 접시를 기울여요. 키보드 ← ↑ → ↓ 로도 보낼 수 있어요.</p>
+        <p class="lead">카메라 화면을 보고 사람이 상자를 골라 접시를 기울여요. 키보드 ← ↑ → ↓로도 보낼 수 있어요.</p>
         <div class="pad">
-          <button data-cmd="L" title="L 보내기 (←)">◀<span>왼쪽 상자 (L)</span></button>
-          <button data-cmd="C" title="C 보내기 (↑)">●<span>수평 (C)</span></button>
-          <button data-cmd="R" title="R 보내기 (→)">▶<span>오른쪽 상자 (R)</span></button>
-          <button data-cmd="N" title="N 보내기 (↓)">✕<span>보류 (N)</span></button>
+          <button data-cmd="L" title="L 보내기 (키보드 ←)"><svg viewBox="0 0 76 40" aria-hidden="true"><path class="box l" d="M3 27v6h14v-6"/><path class="box r" d="M59 27v6h14v-6"/><path class="pivot" d="M38 23l-4.5 7h9z"/><path class="tray" d="M12 28L64 12"/></svg><span>왼쪽 상자</span><i>L</i></button>
+          <button data-cmd="C" title="C 보내기 (키보드 ↑)"><svg viewBox="0 0 76 40" aria-hidden="true"><path class="box l" d="M3 27v6h14v-6"/><path class="box r" d="M59 27v6h14v-6"/><path class="pivot" d="M38 23l-4.5 7h9z"/><path class="tray" d="M12 20H64"/></svg><span>수평</span><i>C</i></button>
+          <button data-cmd="R" title="R 보내기 (키보드 →)"><svg viewBox="0 0 76 40" aria-hidden="true"><path class="box l" d="M3 27v6h14v-6"/><path class="box r" d="M59 27v6h14v-6"/><path class="pivot" d="M38 23l-4.5 7h9z"/><path class="tray" d="M12 12L64 28"/></svg><span>오른쪽 상자</span><i>R</i></button>
+          <button data-cmd="N" title="N 보내기 (키보드 ↓)"><svg viewBox="0 0 76 40" aria-hidden="true"><path class="box l" d="M3 27v6h14v-6"/><path class="box r" d="M59 27v6h14v-6"/><path class="pivot" d="M38 23l-4.5 7h9z"/><path class="tray" d="M12 20H64"/><path class="no" d="M32 5l12 10M44 5L32 15"/></svg><span>보류</span><i>N</i></button>
         </div>
         <div class="row wrap between">
           <label class="toggle"><input type="checkbox" id="recManual"> 사람 판단도 기록에 남기기</label>
@@ -386,7 +431,7 @@
         </div>
 
         <details class="more">
-          <summary>더 해 보기 — 각도 직접 보내기 · 직접 명령 (4차시)</summary>
+          <summary>각도 직접 보내기와 직접 명령 (4차시)</summary>
         <h3 style="margin-top:4px">각도 직접 보내기 ('이상 명령' 실험)</h3>
         <div class="row wrap">
           <input type="range" id="angle" min="0" max="180" step="1" value="90" style="flex:1;min-width:180px">
@@ -406,7 +451,7 @@
 
       <!-- 규칙 -->
       <div class="panel" id="panel-rule">
-        <p class="lead"><b>라벨 규칙이 두뇌</b> — 로봇은 물건이 무엇인지 몰라요. 사람이 붙여 둔 스티커 색만 읽고, 미리 정한 규칙대로 움직여요.</p>
+        <p class="lead">로봇은 물건이 무엇인지 몰라요. 사람이 붙여 둔 스티커 색만 읽고 정해진 규칙대로 움직여요.</p>
         <div class="split">
           <div>
             <div class="ruleSentence" id="ruleSentence"></div>
@@ -430,8 +475,8 @@
         <div class="outRow">
           <label for="ruleOut">보낼 것</label>
           <select id="ruleOut">
-            <option value="cmd">분류 명령 (L·R·N) — 명령 받기 파일</option>
-            <option value="name">이름 — 이름 받기 파일·직접 만든 코드</option>
+            <option value="cmd">분류 명령 (L, R, N)</option>
+            <option value="name">이름 (이름 받기 파일용)</option>
           </select>
           <span class="outNames hidden" id="ruleNamesBox">
             왼쪽 결과 <input type="text" id="ruleLblL" maxlength="30">
@@ -450,17 +495,17 @@
           <div class="judge" id="ruleJudge"><span>이번 분류는?</span><button class="btn" data-v="O">맞음</button><button class="btn" data-v="X">틀림</button></div>
         </div>
         <details class="more">
-          <summary>더 해 보기 — 스티커 색 · 최소 크기 · 색 범위 바꾸기</summary>
+          <summary>스티커 색, 최소 크기, 색 범위 바꾸기</summary>
           <div class="grid2">
             <div class="field"><label>왼쪽 상자 스티커 색</label><div class="swatches" id="swLeft"></div></div>
             <div class="field"><label>오른쪽 상자 스티커 색</label><div class="swatches" id="swRight"></div></div>
           </div>
           <div class="field">
-            <label for="ruleMin">스티커 최소 크기 — 이보다 작은 색 조각은 스티커로 보지 않음</label>
+            <label for="ruleMin">스티커 최소 크기: 이보다 작은 색 조각은 스티커로 보지 않아요</label>
             <div class="row"><input type="range" id="ruleMin" min="10" max="1000" step="10" style="flex:1"><b id="ruleMinVal" style="min-width:60px;text-align:right"></b></div>
           </div>
           <div class="field">
-            <label for="ruleTol">색 범위 — 얼마나 비슷한 색까지 같은 색으로 볼까</label>
+            <label for="ruleTol">색 범위: 얼마나 비슷한 색까지 같은 색으로 볼지 정해요</label>
             <div class="row"><input type="range" id="ruleTol" min="5" max="45" step="1" style="flex:1"><b id="ruleTolVal" style="min-width:60px;text-align:right"></b></div>
           </div>
         </details>
@@ -468,7 +513,7 @@
 
       <!-- 학습 모델 -->
       <div class="panel" id="panel-tm">
-        <p class="lead"><b>학습 모델이 두뇌</b> — Teachable Machine으로 직접 학습시킨 모델이 사진을 보고 판단해요. 판단은 이 노트북 브라우저 안에서 이루어져 사진이 밖으로 나가지 않아요.</p>
+        <p class="lead">Teachable Machine으로 학습시킨 모델이 사진을 보고 판단해요. 판단은 이 노트북 안에서 해서 사진이 밖으로 나가지 않아요.</p>
         <div class="field">
           <label for="tmUrl">Teachable Machine 모델 공유 링크</label>
           <div class="row">
@@ -479,7 +524,7 @@
         </div>
         <details>
           <summary>링크가 안 열릴 때: 모델 파일로 불러오기</summary>
-          <p class="hint">Teachable Machine '모델 내보내기 → Tensorflow.js → 다운로드'로 받은 zip을 풀고, model.json · metadata.json · weights.bin 세 파일을 한꺼번에 고르세요.</p>
+          <p class="hint">Teachable Machine '모델 내보내기 → Tensorflow.js → 다운로드'로 받은 zip을 풀고, model.json, metadata.json, weights.bin 세 파일을 한꺼번에 고르세요.</p>
           <input type="file" id="tmFiles" multiple accept=".json,.bin">
         </details>
 
@@ -511,7 +556,7 @@
             <div class="judge" id="tmJudge"><span>이번 분류는?</span><button class="btn" data-v="O">맞음</button><button class="btn" data-v="X">틀림</button></div>
           </div>
           <details class="more">
-            <summary>더 해 보기 — 인식 기준 · 사진 방향 · 이름 그대로 보내기</summary>
+            <summary>인식 기준, 사진 방향, 이름 그대로 보내기</summary>
             <div class="grid2">
               <div class="field">
                 <label for="tmThreshold">인식 기준: 확신도가 이보다 낮으면 보내지 않음</label>
@@ -529,7 +574,7 @@
 
       <!-- VLM -->
       <div class="panel" id="panel-vlm">
-        <p class="lead"><b>VLM이 두뇌</b> — 분류 기준을 말로 정하면 VLM이 사진을 보고 LEFT(왼쪽 상자)·RIGHT(오른쪽 상자)·NONE(보류), 또는 정해 준 이름 중 하나로 답해요. 사진은 클라우드의 VLM 서버로 가요.</p>
+        <p class="lead">분류 기준을 문장으로 쓰면 VLM이 사진을 보고 답해요. 사진은 클라우드의 VLM 서버로 가요.</p>
         <div class="field">
           <label for="vlmRule">분류 기준</label>
           <textarea id="vlmRule" rows="2"></textarea>
@@ -542,12 +587,12 @@
         <div class="outRow" style="margin-top:6px">
           <label for="vlmOut">보낼 것</label>
           <select id="vlmOut">
-            <option value="cmd">분류 명령 (LEFT·RIGHT·NONE → L·R·N)</option>
-            <option value="name">이름 — VLM이 고를 이름을 정해 주기</option>
+            <option value="cmd">분류 명령 (LEFT, RIGHT, NONE)</option>
+            <option value="name">이름 (정해 준 이름 중 하나)</option>
           </select>
           <span class="outNames hidden" id="vlmLabelsBox">
             고를 이름 <input type="text" id="vlmLabels" class="wide" placeholder="학용품, 간식, 없음">
-            <span>쉼표로 구분 · 마지막은 '판단이 어려울 때'</span>
+            <span>쉼표로 나눠 쓰고, 마지막 이름은 판단이 어려울 때 골라요</span>
           </span>
         </div>
         <div class="row wrap" style="margin-top:10px">
@@ -577,7 +622,7 @@
         </div>
 
         <details class="more">
-          <summary>더 해 보기 — 질문 문장 바꾸기</summary>
+          <summary>질문 문장 바꾸기</summary>
           <p class="hint">{기준} 자리에 분류 기준이 들어가요. 답 형식 안내(한 단어만 / 이유 먼저)는 '이유 보이기'에 따라 끝에 자동으로 붙어요.</p>
           <textarea id="vlmPrompt" rows="4"></textarea>
           <div class="row" style="margin-top:6px"><button class="btn" id="btnPromptReset">기본 문장으로</button></div>
@@ -586,7 +631,7 @@
 
       <!-- 시연 -->
       <div class="panel" id="panel-demo">
-        <p class="lead"><b>시연으로 배운 정책이 두뇌</b> — 키보드로 접시를 조금씩 기울이는 시연을 녹화해요. 녹화를 그대로 재생하거나, 지금 사진과 가장 비슷한 시연을 찾아 그 움직임을 따라 하게(정책) 할 수 있어요.</p>
+        <p class="lead">키보드로 접시를 조금씩 기울이는 시연을 녹화해요. 녹화를 그대로 재생하거나, 지금 사진과 가장 비슷한 시연을 찾아 그 움직임을 따라 하게(정책) 할 수 있어요.</p>
         <div class="demoTop">
           <div class="gauge">
             <div class="trayViz"><span class="boxL"></span><span class="boxR"></span><div class="bar" id="trayBar"></div><div class="pivot"></div></div>
@@ -595,9 +640,9 @@
           </div>
           <div>
             <div class="ctlRow">
-              <button class="btn" id="btnTiltL">◀ 왼쪽으로<kbd>←</kbd></button>
+              <button class="btn" id="btnTiltL">왼쪽으로<kbd>←</kbd></button>
               <button class="btn" id="btnLevel">수평<kbd>↑</kbd></button>
-              <button class="btn" id="btnTiltR">오른쪽으로 ▶<kbd>→</kbd></button>
+              <button class="btn" id="btnTiltR">오른쪽으로<kbd>→</kbd></button>
             </div>
             <div class="row wrap" style="margin-top:8px">
               <label for="demoStep" class="hint">한 번에</label>
@@ -609,21 +654,21 @@
 
         <div class="row wrap">
           <input type="text" id="demoName" placeholder="물건 이름 (예: 지우개)" style="width:180px">
-          <button class="btn primary" id="btnRec">● 시연 녹화 시작<kbd>Enter</kbd></button>
+          <button class="btn primary" id="btnRec">시연 녹화 시작<kbd>Enter</kbd></button>
           <span class="recState" id="recState"></span>
         </div>
         <p class="hint" style="margin:6px 0 0">녹화를 시작하면 지금 접시 사진(관측)을 찍고, 끝낼 때까지의 기울기 움직임(행동)을 함께 저장해요.</p>
 
-        <h3>1. 녹화해 반복 — 관측 없이 같은 움직임</h3>
+        <h3>1. 녹화한 움직임 그대로 되풀이하기 (관측 없이)</h3>
         <div class="row wrap">
-          <button class="btn" id="btnReplay">▶ 마지막 시연 재생</button>
-          <button class="btn" id="btnStopPlay" disabled>■ 멈춤</button>
+          <button class="btn" id="btnReplay">마지막 시연 재생</button>
+          <button class="btn" id="btnStopPlay" disabled>멈춤</button>
         </div>
 
-        <h3>2. 보여 줘서 가르치기 — 관측을 보고 행동 고르기</h3>
+        <h3>2. 보여 줘서 가르치기 (관측을 보고 행동 고르기)</h3>
         <div class="row wrap">
           <button class="btn" id="btnLearn">배우기</button>
-          <button class="btn primary" id="btnPolicy">▶ 정책 실행<kbd>Space</kbd></button>
+          <button class="btn primary" id="btnPolicy">정책 실행<kbd>Space</kbd></button>
           <span class="hint" id="policyState">아직 배우지 않았어요</span>
         </div>
 
@@ -729,7 +774,7 @@
           <li>micro:bit를 USB로 연결 → 아래 <b>명령 받기</b> 파일을 내려받아 <b>MICROBIT</b> 드라이브에 끌어다 놓기 → LED에 ✓, 접시가 수평(90°)</li>
           <li>'micro:bit 연결' → 목록에서 micro:bit 고르기</li>
           <li>'카메라 켜기' → 외장 웹캠이 접시 위를 내려다보게 두기</li>
-          <li>사람 탭 ◀·▶ → 물건이 상자로 미끄러지고 1.5초 뒤 수평으로 돌아오는지 확인</li>
+          <li>사람 탭의 왼쪽 상자·오른쪽 상자 버튼 → 물건이 상자로 미끄러지고 1.5초 뒤 수평으로 돌아오는지 확인</li>
         </ol>
 
         <h3>micro:bit 파일 (서보 P1)</h3>
@@ -737,12 +782,12 @@
           <div class="hexCard main">
             <b>명령 받기</b>
             <p>모든 탭에서 써요 (1~3·5차시). 웹앱이 보낸 L·C·R·N·각도대로 접시를 기울여요.</p>
-            <button class="btn primary hexDl" data-src="../hex/command_P1.hex" data-name="심화_명령받기_P1.hex">⬇ 심화_명령받기_P1.hex</button>
+            <button class="btn primary hexDl" data-src="../hex/command_P1.hex" data-name="심화_명령받기_P1.hex">심화_명령받기_P1.hex 받기</button>
           </div>
           <div class="hexCard">
             <b>클래스 이름 받기</b>
             <p>이름을 보낼 때 써요(학습 모델 '이름 그대로 보내기', 규칙·VLM '보낼 것: 이름'). 학용품 → 왼쪽, 간식 → 오른쪽.</p>
-            <button class="btn hexDl" data-src="../hex/classname_P1.hex" data-name="심화_이름받기_P1.hex">⬇ 심화_이름받기_P1.hex</button>
+            <button class="btn hexDl" data-src="../hex/classname_P1.hex" data-name="심화_이름받기_P1.hex">심화_이름받기_P1.hex 받기</button>
           </div>
         </div>
         <p class="hint" style="margin:4px 0 0">파일을 MICROBIT 드라이브에 끌어다 놓으면 끝나요. MakeCode 화면에 끌어다 놓으면 블록으로 열려요(고친 뒤 내려받았다면 MakeCode 탭은 닫기).</p>
@@ -759,12 +804,12 @@
         <div class="note">VLM 탭에서는 찍은 사진이 VLM 서버로 가요. 얼굴·이름표가 찍히지 않게 접시만 화면에 두세요. 다른 탭은 사진이 노트북 밖으로 나가지 않아요.</div>
 
         <details class="adv teacherOnly">
-          <summary>micro:bit 코드 보기·고치기 (서보 핀 바꾸기)</summary>
+          <summary>micro:bit 코드 보기와 서보 핀 바꾸기</summary>
           <div class="pinPick">
             <label for="servoPin"><b>서보 신호선 핀</b></label>
             <select id="servoPin">
               <option value="P0">P0</option>
-              <option value="P1">P1 (연수 키트 · Ring:bit 1VG)</option>
+              <option value="P1">P1 (연수 키트, Ring:bit 1VG)</option>
               <option value="P2">P2</option>
             </select>
             <span class="hint">아래 두 코드의 서보 블록이 이 핀으로 바뀌어요. 위 hex 파일은 P1용이에요.</span>
@@ -994,7 +1039,7 @@ basic.showIcon(IconNames.Yes)`;
     const mb = !!port, cam = !!stream, file = mbProbe === "ok";
     const set = (id, cls, sub) => { const el = $(id); el.className = "step" + (cls ? " " + cls : ""); if (sub != null) el.querySelector("small").textContent = sub; };
     set("#stFile", file ? "done" : mbProbe === "silent" ? "warn" : mbProbe === "checking" ? "busy" : "",
-      file ? "micro:bit가 대답했어요" : mbProbe === "silent" ? "대답 없음 — 파일을 넣고 다시 연결" : mbProbe === "checking" ? "대답 확인 중" : "받은 파일을 MICROBIT 드라이브에");
+      file ? "micro:bit가 대답했어요" : mbProbe === "silent" ? "대답이 없어요. 파일을 넣고 다시 연결하세요" : mbProbe === "checking" ? "대답 확인 중" : "받은 파일을 MICROBIT 드라이브에");
     set("#stMb", mb ? "done" : "", mb ? "연결됨" : "USB로 꽂고 누르기");
     set("#stCam", cam ? "done" : "", cam ? "켜짐" : "외장 웹캠이 접시 위를 보게");
     clearTimeout(startHideTimer);
@@ -1154,7 +1199,7 @@ basic.showIcon(IconNames.Yes)`;
         setCamUI(false);
         const why = camErrorText(err);
         $("#camPlaceholder").innerHTML = `<div><b style="color:#f2b8b5">카메라를 켤 수 없어요</b><br>${esc(why)}<br><small>(오류 이름: ${esc(err.name || "알 수 없음")})</small></div>`;
-        toast("카메라를 켤 수 없어요 — " + why, "bad");
+        toast("카메라를 켤 수 없어요. " + why, "bad");
         return;
       }
     }
@@ -1395,7 +1440,7 @@ basic.showIcon(IconNames.Yes)`;
   }
 
   function showRuleLive(ev) {
-    const cnt = (n) => (!ev ? "—" : n >= ev.min ? "있음 · " + n : n ? "작음 · " + n : "없음");
+    const cnt = (n) => (!ev ? "—" : n >= ev.min ? "있음 (" + n + ")" : n ? "작음 (" + n + ")" : "없음");
     $("#ruleCntL").textContent = cnt(ev && ev.nl);
     $("#ruleCntR").textContent = cnt(ev && ev.nr);
     $("#ruleNow").textContent = ev ? DEC_KO[ev.dec] : "카메라 꺼짐";
@@ -1419,16 +1464,16 @@ basic.showIcon(IconNames.Yes)`;
     else sentText = "보내지 못함";
     const nL = colorAdj(settings.ruleLeft), nR = colorAdj(settings.ruleRight);
     $("#ruleResult").classList.remove("hidden");
-    $("#ruleBig").textContent = DEC_KO[ev.dec] + (named && out ? ` → "${out}"` : "") + (auto ? " · 자동" : "");
+    $("#ruleBig").textContent = DEC_KO[ev.dec] + (named && out ? ` → "${out}"` : "") + (auto ? " (자동)" : "");
     $("#ruleReason").textContent = ev.why;
-    $("#ruleCounted").textContent = `${nL} ${ev.nl} · ${nR} ${ev.nr} (최소 크기 ${ev.min}) — ${ev.why}`;
+    $("#ruleCounted").textContent = `${nL} ${ev.nl}, ${nR} ${ev.nr} (최소 크기 ${ev.min})`;
     $("#ruleSent").textContent = sentText;
     $("#ruleMs").textContent = (ev.ms / 1000).toFixed(3) + "초";
     markJudge("#ruleJudge", "");
     showLastShot($("#ruleView").toDataURL("image/png"));
     lastRec.rule = addRecord({
-      mode: "규칙", auto, target: `라벨: ${nL} 스티커→왼쪽 · ${nR} 스티커→오른쪽`,
-      answer: `${nL} ${ev.nl} · ${nR} ${ev.nr} — ${ev.why}`, decision: DEC_KO[ev.dec], sent, latency: ev.ms
+      mode: "규칙", auto, target: `${nL} 스티커는 왼쪽, ${nR} 스티커는 오른쪽`,
+      answer: `${nL} ${ev.nl}, ${nR} ${ev.nr}. ${ev.why}`, decision: DEC_KO[ev.dec], sent, latency: ev.ms
     });
   }
 
@@ -1690,7 +1735,7 @@ basic.showIcon(IconNames.Yes)`;
       $("#rRaw").textContent = o.error;
       $("#rSent").textContent = "보내지 않음";
     } else {
-      $("#rBig").textContent = o.r.dec ? (o.named ? `"${o.r.dec}"` : `${o.r.dec} · ${DEC_KO[o.r.dec]}`) : "판단 불가";
+      $("#rBig").textContent = o.r.dec ? (o.named ? `"${o.r.dec}"` : `${DEC_KO[o.r.dec]} (${o.r.dec})`) : "판단 불가";
       const showR = o.withReason && o.r.reason;
       rs.classList.toggle("hidden", !showR && !o.cut);
       rs.textContent = (showR ? "이유: " + o.r.reason : "") +
@@ -1698,7 +1743,7 @@ basic.showIcon(IconNames.Yes)`;
       $("#rRaw").textContent = o.r.text.trim() || "(빈 답)";
       $("#rSent").textContent = o.sentText;
     }
-    $("#rMs").textContent = (o.ms / 1000).toFixed(2) + "초" + (o.reuse ? " · 같은 사진 다시 물음" : "");
+    $("#rMs").textContent = (o.ms / 1000).toFixed(2) + "초" + (o.reuse ? " (같은 사진 다시 물음)" : "");
     $("#rPrompt").textContent = o.prompt;
   }
 
@@ -1728,7 +1773,7 @@ basic.showIcon(IconNames.Yes)`;
     busy = false; setAskUI(false);
     lastCallAt = Date.now();
     const parts = Object.keys(tally).map((k) => `${k} ${tally[k]}번`);
-    $("#fiveSum").textContent = (Object.keys(tally).length > 1 ? "답이 흔들렸어요 · " : "5번 모두 같은 답 · ") + parts.join(" · ");
+    $("#fiveSum").textContent = (Object.keys(tally).length > 1 ? "답이 흔들렸어요: " : "5번 모두 같은 답: ") + parts.join(", ");
   }
 
   // ---------- 학습 모델 (Teachable Machine) ----------
@@ -1742,8 +1787,8 @@ basic.showIcon(IconNames.Yes)`;
     "https://unpkg.com/@teachablemachine/image@0.8.5/dist/teachablemachine-image.min.js"
   ];
   const TM_ACTIONS = [
-    ["L", "L · 왼쪽 상자 (150°)"], ["R", "R · 오른쪽 상자 (30°)"], ["N", "N · 보류 (X 표시)"],
-    ["C", "C · 수평"], ["A", "각도 직접"], ["NAME", "이름 그대로 보내기"], ["", "보내지 않음"]
+    ["L", "왼쪽 상자 L (150°)"], ["R", "오른쪽 상자 R (30°)"], ["N", "보류 N (X 표시)"],
+    ["C", "수평 C"], ["A", "각도 직접"], ["NAME", "이름 그대로 보내기"], ["", "보내지 않음"]
   ];
   let tmModel = null, tmLabels = [], tmKey = "", tmLoading = false, tmBusy = false;
   let tmAutoTimer = null, tmAutoGen = 0;
@@ -1866,8 +1911,8 @@ basic.showIcon(IconNames.Yes)`;
       $("#tmBox").classList.remove("hidden");
       $("#tmResult").classList.add("hidden");
       const unset = labels.filter((l) => !tmActionOf(l)).length;
-      setTmStatus(`불러옴 · 클래스 ${labels.length}개 (${labels.join(", ")})` +
-        (unset ? ` · '보내지 않음'인 클래스 ${unset}개는 할 일을 고르세요` : " · 동작 연결됨"), "ok");
+      setTmStatus(`불러왔어요. 클래스 ${labels.length}개 (${labels.join(", ")})` +
+        (unset ? `. '보내지 않음'인 클래스 ${unset}개는 할 일을 고르세요` : ". 동작이 연결됐어요"), "ok");
       renderTmChip();
       try { const c = document.createElement("canvas"); c.width = c.height = 224; await tmModel.predict(c); } catch (e) {}
       tmFrame();
@@ -1935,8 +1980,8 @@ basic.showIcon(IconNames.Yes)`;
       if (ok) { sent = out; sentText = actionText(ev.action, ev.label); } else sentText = "보내지 못함";
     }
     $("#tmResult").classList.remove("hidden");
-    $("#tmBig").textContent = `${ev.label} · ${ev.pct}%` + (auto ? " · 자동" : "");
-    $("#tmReason").textContent = `확신도가 가장 높은 클래스는 '${ev.label}'(${ev.pct}%) — 인식 기준 ${settings.tmThreshold}% ` +
+    $("#tmBig").textContent = `${ev.label} ${ev.pct}%` + (auto ? " (자동)" : "");
+    $("#tmReason").textContent = `확신도가 가장 높은 클래스는 '${ev.label}'(${ev.pct}%)예요. 인식 기준 ${settings.tmThreshold}% ` +
       (ev.pass ? "이상이라 이 클래스의 동작을 해요" : "보다 낮아서 보내지 않아요");
     $("#tmSent").textContent = sentText;
     $("#tmMs").textContent = (ev.ms / 1000).toFixed(2) + "초";
@@ -2063,10 +2108,10 @@ basic.showIcon(IconNames.Yes)`;
   function setRecUI() {
     const b = $("#btnRec");
     if (demoRec) {
-      b.className = "btn rec"; b.innerHTML = "■ 시연 녹화 끝<kbd>Enter</kbd>";
+      b.className = "btn rec"; b.innerHTML = "시연 녹화 끝<kbd>Enter</kbd>";
       $("#recState").className = "recState on";
     } else {
-      b.className = "btn primary"; b.innerHTML = "● 시연 녹화 시작<kbd>Enter</kbd>";
+      b.className = "btn primary"; b.innerHTML = "시연 녹화 시작<kbd>Enter</kbd>";
       $("#recState").className = "recState"; $("#recState").textContent = "";
     }
   }
@@ -2081,7 +2126,7 @@ basic.showIcon(IconNames.Yes)`;
     recTicker = setInterval(() => {
       if (!demoRec) return;
       const s = (performance.now() - demoRec.t0) / 1000;
-      $("#recState").textContent = `녹화 중 ${s.toFixed(1)}초 · ← → 로 기울이세요` + (writer ? "" : " · micro:bit 미연결(움직임만 기록)");
+      $("#recState").textContent = `녹화 중 ${s.toFixed(1)}초. ← →로 기울이세요` + (writer ? "" : " (micro:bit 미연결: 움직임만 기록)");
       if (s > 20) stopDemoRec();
     }, 100);
   }
@@ -2103,7 +2148,7 @@ basic.showIcon(IconNames.Yes)`;
     saveDemos();
     renderDemos();
     renderPolicyState();
-    toast(`시연 #${id} 저장 · ${angleText(peak)}`, "ok");
+    toast(`시연 #${id}을 저장했어요 (${angleText(peak)})`, "ok");
   }
 
   function setPlayUI(on) {
@@ -2165,7 +2210,7 @@ basic.showIcon(IconNames.Yes)`;
     const el = $("#policyState");
     if (!policy) { el.textContent = demos.length < 2 ? "시연을 2개 이상 녹화한 뒤 '배우기'" : "아직 배우지 않았어요"; return; }
     const changed = demos.length !== policy.n || demos.some((d) => !policy.ids.includes(d.id));
-    el.textContent = `시연 ${policy.n}개(물건 ${policy.kinds}종)로 배움 · ${policy.at}` + (changed ? " · 시연이 바뀌었어요, 다시 '배우기'" : "");
+    el.textContent = `시연 ${policy.n}개(물건 ${policy.kinds}종)로 배웠어요 (${policy.at})` + (changed ? ". 시연이 바뀌었으니 다시 '배우기'를 누르세요" : "");
   }
 
   async function runPolicy() {
@@ -2184,8 +2229,8 @@ basic.showIcon(IconNames.Yes)`;
     $("#polNow").src = obs.thumb;
     $("#polRef").src = best.d.thumb;
     $("#polRefCap").textContent = `참고한 시연 #${best.d.id} ${best.d.name}`;
-    $("#polWho").textContent = `#${best.d.id} ${best.d.name} · 비슷한 정도 ${pct(best.s)}`;
-    $("#polMove").textContent = angleText(best.d.peak) + ` · ${(best.d.dur / 1000).toFixed(1)}초`;
+    $("#polWho").textContent = `#${best.d.id} ${best.d.name}, 비슷한 정도 ${pct(best.s)}`;
+    $("#polMove").textContent = angleText(best.d.peak) + `, ${(best.d.dur / 1000).toFixed(1)}초`;
     $("#polRank").textContent = cands.slice(0, 3).map((c, i) => `${i + 1}. #${c.d.id} ${c.d.name} ${pct(c.s)}`).join("   ");
     markJudge("#demoJudge", "");
     showLastShot(obs.thumb);
@@ -2202,7 +2247,7 @@ basic.showIcon(IconNames.Yes)`;
         <img src="${d.thumb}" alt="시연 #${d.id}">
         <button class="x" data-id="${d.id}" title="이 시연 지우기">✕</button>
         <div><b>#${d.id} ${esc(d.name)}</b></div>
-        <div class="hint">${esc(angleText(d.peak))} · ${(d.dur / 1000).toFixed(1)}초</div>
+        <div class="hint">${esc(angleText(d.peak))}, ${(d.dur / 1000).toFixed(1)}초</div>
       </div>`).join("") || `<div class="hint" style="grid-column:1/-1">아직 시연이 없어요. 물건을 올리고 '시연 녹화 시작' → ← → 로 기울이기 → '녹화 끝'</div>`;
   }
 
@@ -2226,7 +2271,7 @@ basic.showIcon(IconNames.Yes)`;
     renderRecords();
   }
 
-  const modeText = (r) => r.mode + (r.auto ? " · 자동" : "") + (r.five ? " · 5번 묻기 " + r.five : r.reuse ? " ↻" : "") + (r.reason ? " · 이유" : "");
+  const modeText = (r) => r.mode + (r.auto ? " (자동)" : "") + (r.five ? " (5번 묻기 " + r.five + ")" : r.reuse ? " ↻" : "") + (r.reason ? " (이유)" : "");
 
   function renderRecords() {
     $("#recCount").textContent = records.length ? "(" + records.length + ")" : "";
@@ -2405,9 +2450,9 @@ basic.showIcon(IconNames.Yes)`;
     try {
       const r = await askVLM(b64, "이 사진의 색을 한 단어로 답해.", 20);
       calls += 1; store.set("pai2.calls", calls); renderCalls();
-      out.textContent = `성공 · 답: "${r.text.trim()}" · ${((performance.now() - t0) / 1000).toFixed(2)}초`;
+      out.textContent = `성공: 답 "${r.text.trim()}", ${((performance.now() - t0) / 1000).toFixed(2)}초`;
     } catch (e) {
-      out.textContent = "실패 · " + errMsg(e);
+      out.textContent = "실패: " + errMsg(e);
     }
   }
 
@@ -2448,7 +2493,7 @@ basic.showIcon(IconNames.Yes)`;
   $("#condition").addEventListener("change", syncCond);
   $("#btnCondClear").addEventListener("click", () => {
     $("#condition").value = ""; syncCond();
-    toast("실험 조건을 비웠어요 — 다음 기록부터 조건 없이 남아요", "ok");
+    toast("실험 조건을 비웠어요. 다음 기록부터 조건 없이 남아요", "ok");
   });
   $$(".autoSendCb").forEach((c) => c.addEventListener("change", (e) => { settings.autoSend = e.target.checked; syncAutoSend(); saveSettings(true); }));
 
@@ -2505,7 +2550,7 @@ basic.showIcon(IconNames.Yes)`;
     const metadata = fs.find((f) => /metadata\.json$/i.test(f.name));
     const weights = fs.find((f) => /\.bin$/i.test(f.name));
     e.target.value = "";
-    if (!model || !metadata || !weights) { toast("model.json · metadata.json · weights.bin 세 파일을 함께 고르세요", "warn"); return; }
+    if (!model || !metadata || !weights) { toast("model.json, metadata.json, weights.bin 세 파일을 함께 고르세요", "warn"); return; }
     loadTm({ files: { model, weights, metadata } });
   });
   $("#tmRows").addEventListener("change", (e) => {
@@ -2671,7 +2716,7 @@ basic.showIcon(IconNames.Yes)`;
       const url = URL.createObjectURL(blob);
       save(url);
       setTimeout(() => URL.revokeObjectURL(url), 5000);
-      toast(`내려받았어요: ${name} — MICROBIT 드라이브에 끌어다 놓으세요`, "ok");
+      toast(`내려받았어요: ${name}. MICROBIT 드라이브에 끌어다 놓으세요`, "ok");
     } catch (e) {
       if (location.protocol === "file:") { save(src); return; }
       toast("hex 파일을 찾지 못했어요. 웹앱(index.html) 옆에 hex 폴더가 함께 올라가 있는지 확인하세요", "bad");
@@ -2737,11 +2782,11 @@ basic.showIcon(IconNames.Yes)`;
     if (h !== TEACHER_HASH) { $("#unlockMsg").textContent = "비밀번호가 달라요"; $("#unlockPw").select(); return; }
     teacherMode = true; store.set("pai2.teacherKey", h);
     closeUnlock(); applyMode();
-    toast("강사용 화면이에요 — 설정 탭과 micro:bit 코드가 보여요", "ok");
+    toast("강사용 화면이에요. 설정 탭과 micro:bit 코드가 보여요", "ok");
   }
   function lockTeacher() {
     teacherMode = false; store.del("pai2.teacherKey"); applyMode();
-    toast("잠갔어요 — 실습용 화면(연수생 화면)이에요", "ok");
+    toast("잠갔어요. 연수생이 보는 실습용 화면이에요", "ok");
   }
   $("#btnEnterTeacher").addEventListener("click", openUnlock);
   $("#btnLeaveTeacher").addEventListener("click", lockTeacher);
