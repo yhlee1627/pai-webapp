@@ -150,12 +150,19 @@
   .log{height:4.25rem;overflow:auto;background:var(--paper);border:1.5px solid var(--rule-2);border-radius:0.375rem;padding:0.375rem 0.5rem;
        font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:0.7812rem;line-height:1.45}
   .log .out{color:var(--ink)} .log .in{color:var(--ok)} .log .sys{color:var(--ink-3)}
+  .log .lost{color:var(--warn);font-weight:600}
+  /* 명령을 보내자마자 끊겼을 때 (서보 전원 부족으로 micro:bit가 다시 켜짐) */
+  .lostNote{position:relative;margin-top:0.625rem;background:var(--warn-soft);border-left:3px solid #D9A400;border-radius:0.25rem;padding:0.5rem 2rem 0.5rem 0.75rem;font-size:0.8125rem;line-height:1.5}
+  .lostNote b{display:block;font-size:0.875rem;margin-bottom:0.125rem}
+  .lostNote ol{margin:0.25rem 0 0;padding-left:1.125rem} .lostNote li{margin:0.0625rem 0}
+  .lostNote .x{position:absolute;top:0.25rem;right:0.25rem;border:none;background:none;color:var(--ink-2);font-size:1.0625rem;line-height:1;padding:0.125rem 0.375rem;cursor:pointer;border-radius:0.25rem}
+  .lostNote .x:hover{color:var(--ink);background:rgba(0,0,0,.06)}
 
   /* ---------- 오른쪽: 시작하기 (준비물 체크) ---------- */
-  .startBar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:0.25rem 0.875rem;align-items:center;
+  .startBar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0.25rem 0.875rem;align-items:center;
             border-bottom:1.5px dashed var(--rule);padding:0 0 0.75rem;margin:0 0 0.875rem}
   .startBar .stTitle{display:none;font-weight:700;color:var(--ok);white-space:nowrap}
-  .startBar.ready{grid-template-columns:auto repeat(3,minmax(0,1fr)) auto}
+  .startBar.ready{grid-template-columns:auto repeat(3,minmax(0,1fr))}
   .startBar.ready .stTitle{display:block}
   .startBar .step{display:flex;align-items:center;gap:0.5625rem;min-width:0}
   .startBar .num{flex:none;width:1.25rem;height:1.25rem;border:1.75px solid var(--ink);border-radius:0.1875rem;color:var(--ink);
@@ -166,13 +173,11 @@
   .startBar .step .btn{flex:none;padding:0.1875rem 0.625rem;font-size:0.8125rem}
   .startBar .step.done .num{background:var(--ok);border-color:var(--ok);color:#fff}
   .startBar .step.done .num::after{content:"✓";font-size:0.8125rem} .startBar .step.done .num span{display:none}
-  .startBar .step.done .btn{display:none}
+  .startBar .step.done .btn:not(.hexDl){display:none}
   .startBar .step.done small{color:var(--ok)}
   .startBar .step.warn .num{border-color:var(--warn);color:var(--warn)}
   .startBar .step.warn small{color:var(--warn);font-weight:600}
   .startBar .step.busy small::after{content:" …"}
-  .startBar .x{border:none;background:none;color:var(--ink-3);font-size:1.0625rem;cursor:pointer;padding:0 0.375rem;border-radius:0.25rem}
-  .startBar .x:hover{color:var(--ink);background:var(--tint)}
 
   /* ---------- 오른쪽: 두뇌 고르기 (이 화면에서 하나뿐인 강조) ---------- */
   .brains{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:2px solid var(--ink);border-radius:0.5rem;margin:0 0 1.25rem;background:var(--sheet)}
@@ -388,6 +393,12 @@
         </select>
       </div>
       <div class="log" id="mbLog"></div>
+      <div class="lostNote hidden" id="mbLost" role="status">
+        <b>micro:bit가 방금 다시 켜졌어요 <span id="mbLostCount"></span></b>
+        서보가 움직이는 순간 전기가 모자라면 micro:bit가 다시 켜지면서 USB가 잠깐 끊겨요(MICROBIT 드라이브가 다시 뜸). 다시 잡히면 저절로 이어요.
+        <ol><li>Ring:bit 뒷면에 AAA 건전지 3개를 넣고 옆 전원 스위치 켜기</li><li>접시가 끝까지 기울 때 어딘가에 걸리지 않는지</li><li>허브 말고 노트북 본체 USB에 바로 꽂기</li></ol>
+        <button class="x" id="mbLostX" title="닫기">×</button>
+      </div>
     </section>
   </div>
 
@@ -404,7 +415,6 @@
         <div class="step" id="stCam"><span class="num"><span>3</span></span>
           <span class="txt"><b>카메라 켜기</b><small id="stCamSub">외장 웹캠이 접시 위를 보게</small></span>
           <button class="btn" id="btnStartCam">켜기</button></div>
-        <button class="x" id="startClose" title="닫기 (이 창에서는 다시 안 보여요)">×</button>
       </div>
       <div class="tabsRow">
         <div class="tabs brains" role="tablist" aria-label="두뇌 고르기">
@@ -1030,6 +1040,8 @@ basic.showIcon(IconNames.Yes)`;
 
   // 연결하면 C(수평)를 보내 micro:bit 프로그램이 대답하는지 확인 → 시작하기 1단계
   let lastRxAt = 0, mbProbe = "none";   // none · checking · ok · silent
+  let lastTxAt = 0;                     // 마지막으로 보낸 시각 (끊긴 원인 짐작용)
+  let wantPort = false;                 // 끊겼는데 사용자가 끊은 게 아님 → 다시 잡히면 저절로 이음
   async function probeMicrobit() {
     mbProbe = "checking"; renderStart();
     await sleep(300);
@@ -1051,24 +1063,17 @@ basic.showIcon(IconNames.Yes)`;
     renderStart();
   }
 
-  // 시작하기 띠: 파일(대답 확인) · 연결 · 카메라. 셋 다 되면 잠깐 '준비 완료'를 보여 주고 접음
-  let startClosed = store.sget("pai2.startClosed") === "1", startHideTimer = null;
+  // 시작하기 띠: 파일(대답 확인) · 연결 · 카메라. 늘 위에 두고, 셋 다 되면 '준비 완료 ✓'
   function renderStart() {
     const bar = $("#startBar"); if (!bar) return;
     const mb = !!port, cam = !!stream, file = mbProbe === "ok";
     const set = (id, cls, sub) => { const el = $(id); el.className = "step" + (cls ? " " + cls : ""); if (sub != null) el.querySelector("small").textContent = sub; };
     set("#stFile", file ? "done" : mbProbe === "silent" ? "warn" : mbProbe === "checking" ? "busy" : "",
       file ? "micro:bit가 대답했어요" : mbProbe === "silent" ? "대답이 없어요. 파일을 넣고 다시 연결하세요" : mbProbe === "checking" ? "대답 확인 중" : "받은 파일을 MICROBIT 드라이브에");
-    set("#stMb", mb ? "done" : "", mb ? "연결됨" : "USB로 꽂고 누르기");
+    set("#stMb", mb ? "done" : wantPort ? "busy warn" : "", mb ? "연결됨" : wantPort ? "끊겼어요. 다시 잇는 중" : "USB로 꽂고 누르기");
     set("#stCam", cam ? "done" : "", cam ? "켜짐" : "외장 웹캠이 접시 위를 보게");
-    clearTimeout(startHideTimer);
-    if (file && mb && cam) {
-      bar.classList.add("ready"); bar.querySelector(".stTitle").textContent = "준비 완료 ✓";
-      startHideTimer = setTimeout(() => { bar.classList.add("hidden"); }, 2500);
-    } else {
-      bar.classList.remove("ready"); bar.querySelector(".stTitle").textContent = "시작하기";
-      bar.classList.toggle("hidden", startClosed);
-    }
+    bar.classList.toggle("ready", file && mb && cam);
+    bar.querySelector(".stTitle").textContent = file && mb && cam ? "준비 완료 ✓" : "시작하기";
   }
 
   async function connectSerial() {
@@ -1090,6 +1095,7 @@ basic.showIcon(IconNames.Yes)`;
       return;
     }
     writer = port.writable.getWriter();
+    stopReconnect();
     setSerialUI(true, "연결됨 (115200)");
     mbLog("micro:bit 연결됨", "sys");
     readLoop();
@@ -1129,18 +1135,72 @@ basic.showIcon(IconNames.Yes)`;
     try { if (p) await p.close(); } catch (e) {}
     port = null; writer = null; reader = null; readDone = null;
     setSerialUI(false);
-    if (!silent) mbLog("micro:bit 연결 끊음", "sys");
+    if (!silent) { mbLog("micro:bit 연결 끊음", "sys"); stopReconnect(); }
   }
 
+  // ---------- 끊겼다가 다시 잡히면 저절로 잇기 ----------
+  // micro:bit가 다시 켜지면(서보 전원 부족 등) USB가 빠졌다 다시 잡힘 → 같은 micro:bit면 권한이 남아 있어 바로 열 수 있음.
+  // 다시 이을 때는 접시를 움직이는 확인 명령(C)을 보내지 않음 (또 다시 켜질 수 있어서)
+  let lostProbe = "none", lostCount = 0, lostTimer = null, reconnecting = false;
+  function stopReconnect() { wantPort = false; clearTimeout(lostTimer); lostTimer = null; renderStart(); }
+  async function reconnect(p) {
+    if (reconnecting || port || !wantPort || !p) return false;
+    reconnecting = true;
+    try { await p.open({ baudRate: 115200 }); }
+    catch (e) { reconnecting = false; return false; }   // 아직 준비 안 됨 → 조금 뒤 다시
+    reconnecting = false;
+    if (port || !wantPort) { try { await p.close(); } catch (e) {} return false; }
+    port = p; writer = port.writable.getWriter();
+    stopReconnect();
+    setSerialUI(true, "다시 연결됨 (115200)");
+    if (lostProbe === "ok") { mbProbe = "ok"; renderStart(); }
+    mbLog("micro:bit가 다시 잡혀서 저절로 이었어요", "sys");
+    toast("micro:bit를 다시 이었어요", "ok");
+    readLoop();
+    return true;
+  }
+  function watchReconnect() {
+    clearTimeout(lostTimer);
+    const until = Date.now() + 30000;
+    const tick = async () => {
+      lostTimer = null;
+      if (!wantPort || port) return;
+      try {
+        const ps = (await navigator.serial.getPorts()).filter((p) => { try { return p.getInfo().usbVendorId === 0x0d28; } catch (e) { return false; } });
+        for (const p of ps.reverse()) { if (await reconnect(p)) return; }
+      } catch (e) {}
+      if (!wantPort || port) return;
+      if (Date.now() < until) lostTimer = setTimeout(tick, 700);
+      else { stopReconnect(); mbLog("다시 잡히지 않아요. USB를 확인하고 'micro:bit 연결'을 누르세요", "lost"); }
+    };
+    lostTimer = setTimeout(tick, 700);
+  }
   if ("serial" in navigator) {
     navigator.serial.addEventListener("disconnect", (e) => {
       if (port && e.target === port) {
+        const since = Date.now() - lastTxAt, afterCmd = lastTxAt > 0 && since < 3000;
+        lostProbe = mbProbe;
+        clearTimeout(returnTimer); returnTimer = null;   // 다시 켜진 뒤 밀린 수평 복귀로 또 움직이지 않게
+        wantPort = true;
         disconnectSerial(true);
-        mbLog("micro:bit 연결이 끊겼어요 (케이블 확인)", "sys");
-        toast("micro:bit 연결이 끊겼어요", "warn");
+        if (afterCmd) {
+          lostCount++;
+          mbLog(`micro:bit 연결이 끊겼어요 (명령을 보낸 지 ${(since / 1000).toFixed(1)}초 뒤). 다시 잡히면 저절로 이어요`, "lost");
+          $("#mbLostCount").textContent = lostCount > 1 ? `(${lostCount}번째)` : "";
+          $("#mbLost").classList.remove("hidden");
+          toast("micro:bit가 다시 켜졌어요. 서보 전원을 확인하세요", "warn");
+        } else {
+          mbLog("micro:bit 연결이 끊겼어요. 다시 꽂으면 저절로 이어요", "lost");
+          toast("micro:bit 연결이 끊겼어요", "warn");
+        }
+        watchReconnect();
       }
     });
+    navigator.serial.addEventListener("connect", (e) => {
+      if (wantPort && !port) setTimeout(() => reconnect(e.target), 300);
+    });
   }
+  $("#mbLostX").addEventListener("click", () => $("#mbLost").classList.add("hidden"));
 
   // 보낼 글자 끝에 줄바꿈을 붙여 전송. quiet면 미연결이어도 알림을 띄우지 않음
   let sendChain = Promise.resolve();
@@ -1152,6 +1212,7 @@ basic.showIcon(IconNames.Yes)`;
       if (!writer) return false;
       try {
         await writer.write(new TextEncoder().encode(text + "\n"));
+        lastTxAt = Date.now();
         mbLog("→ " + text + (opt.note ? "  (" + opt.note + ")" : ""), "out");
         return true;
       } catch (e) {
@@ -2903,7 +2964,6 @@ basic.showIcon(IconNames.Yes)`;
   // 시작하기 띠 버튼
   $("#btnStartMb").addEventListener("click", () => $("#btnSerial").click());
   $("#btnStartCam").addEventListener("click", () => { if (!stream) $("#btnCam").click(); });
-  $("#startClose").addEventListener("click", () => { startClosed = true; store.sset("pai2.startClosed", "1"); renderStart(); });
   renderStart();
   // AI가 본 사진: 누르면 크게/작게, ×는 다음 판단 때까지 숨기기
   $("#aiShot").addEventListener("click", (e) => { if (e.target.id !== "aiShotX") $("#aiShot").classList.toggle("big"); });
