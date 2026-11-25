@@ -1,9 +1,9 @@
 // 피지컬 AI 실습 — VLM 중계 서버 (Cloudflare Worker)
 //
 // 두 가지 방식을 함께 받는다.
-//  1) 반(class): 강사가 웹앱 강사용 화면에서 자기 Anthropic API 키로 '반'을 만들면,
+//  1) 반(class): 선생님이 웹앱 선생님 화면에서 자기 Anthropic API 키로 '반'을 만들면,
 //     학생은 반 ID·비밀번호로 VLM을 쓴다. 키는 암호화해 D1에 맡기고 학생 화면에는 보내지 않는다.
-//     기간이 지나거나 강사가 '반 닫기'를 누르면 키를 지운다.
+//     기간이 지나거나 선생님이 '반 닫기'를 누르면 키를 지운다.
 //  2) 연수 코드(예전 방식, v1 웹앱): x-class-code가 CLASS_CODE와 같으면 이 서버의 ANTHROPIC_API_KEY로 부른다.
 //
 // Cloudflare 설정 (Workers → pai-vlm → 설정)
@@ -168,8 +168,8 @@ async function callAnthropic(env, key, { image, prompt, maxTokens }) {
   return { text, stop: data.stop_reason || "" };
 }
 const API_KO = {
-  key_invalid: "강사의 API 키를 더 이상 쓸 수 없어요 (키가 삭제되었거나 틀림)",
-  credit: "강사 API 계정의 크레딧이 부족해요",
+  key_invalid: "선생님의 API 키를 더 이상 쓸 수 없어요 (키가 삭제되었거나 틀림)",
+  credit: "선생님 API 계정의 크레딧이 부족해요",
   key_forbidden: "이 API 키로는 쓸 수 없어요",
   busy: "요청이 너무 많아요. 잠시 뒤 다시 해 보세요",
   model: "모델 이름을 찾을 수 없어요 (서버의 MODEL 설정 확인)",
@@ -202,10 +202,10 @@ async function handleVlm(req, env, origin, body) {
     if (!row) return fail(env, origin, 404, "class_gone", "반을 찾을 수 없어요 (기간이 끝났거나 닫힌 반이에요)");
     if (!(await pwOk(row, req.headers.get("x-class-pw")))) { await bump(env, keys); return fail(env, origin, 401, "bad_pw", "반 비밀번호가 맞지 않아요"); }
     const up = await env.DB.prepare("UPDATE classes SET calls = calls + 1 WHERE id = ? AND calls < max_calls").bind(id).run();
-    if (!up.meta || !up.meta.changes) return fail(env, origin, 429, "limit", `이 반의 호출 한도(${row.max_calls}회)를 다 썼어요. 강사에게 알려 주세요`);
+    if (!up.meta || !up.meta.changes) return fail(env, origin, 429, "limit", `이 반의 호출 한도(${row.max_calls}회)를 다 썼어요. 선생님께 알려 주세요`);
     let key;
     try { key = await openKey(env, row.key_enc); }
-    catch (e) { return fail(env, origin, 500, "seal", "서버가 강사 키를 읽지 못했어요 (KEY_SECRET이 바뀌었으면 반을 새로 만들어 주세요)"); }
+    catch (e) { return fail(env, origin, 500, "seal", "서버가 선생님 키를 읽지 못했어요 (KEY_SECRET이 바뀌었으면 반을 새로 만들어 주세요)"); }
     try {
       return json(env, origin, 200, await callAnthropic(env, key, v));
     } catch (e) {
@@ -220,7 +220,7 @@ async function handleVlm(req, env, origin, body) {
     if (!env.ANTHROPIC_API_KEY || !env.CLASS_CODE) return fail(env, origin, 500, "not_ready", "서버에 연수 코드 방식이 설정되지 않았어요");
     if (!sameText(String(code), String(env.CLASS_CODE))) return fail(env, origin, 401, "bad_code", "연수 코드가 맞지 않아요");
     try { return json(env, origin, 200, await callAnthropic(env, env.ANTHROPIC_API_KEY, v)); }
-    catch (e) { return fail(env, origin, e.status === 429 ? 429 : 502, e.code, (API_KO[e.code] || e.message).replace("강사의 ", "서버의 ").replace("강사 ", "서버 ")); }
+    catch (e) { return fail(env, origin, e.status === 429 ? 429 : 502, e.code, (API_KO[e.code] || e.message).replace("선생님의 ", "서버의 ").replace("선생님 ", "서버 ")); }
   }
   return fail(env, origin, 401, "need_class", "반 ID와 비밀번호를 넣어 주세요");
 }
@@ -239,7 +239,7 @@ async function handleClass(req, env, origin, path, body) {
     const maxCalls = Math.max(LIM.callsMin, Math.min(LIM.callsMax, Math.round(Number(body.maxCalls) || 1000)));
     const name = String(body.name || "").replace(/[\r\n\t]+/g, " ").trim().slice(0, 40);
     try { await callAnthropic(env, apiKey, { prompt: "OK라고만 답해.", maxTokens: 5 }); }   // 키 시험 (아주 짧은 글 한 번)
-    catch (e) { return fail(env, origin, e.status === 429 ? 429 : 400, e.code, (API_KO[e.code] || e.message).replace("강사의 API 키를 더 이상 쓸 수 없어요 (키가 삭제되었거나 틀림)", "API 키가 맞지 않아요")); }
+    catch (e) { return fail(env, origin, e.status === 429 ? 429 : 400, e.code, (API_KO[e.code] || e.message).replace("선생님의 API 키를 더 이상 쓸 수 없어요 (키가 삭제되었거나 틀림)", "API 키가 맞지 않아요")); }
     await cleanup(env);
     let id = "";
     for (let i = 0; i < 8 && !id; i++) { const c = newClassId(); if (!(await env.DB.prepare("SELECT 1 FROM classes WHERE id = ?").bind(c).first())) id = c; }
@@ -264,7 +264,7 @@ async function handleClass(req, env, origin, path, body) {
     return json(env, origin, 200, { ok: true, classId: info.classId, name: info.name, expiresAt: info.expiresAt });
   }
 
-  // 아래는 반을 만든 강사(관리 토큰)만
+  // 아래는 반을 만든 선생님(관리 토큰)만
   const row = id && await getClass(env, id);
   if (!row) return fail(env, origin, 404, "class_gone", "반이 없어요 (기간이 끝났거나 이미 닫힌 반이에요)");
   if (!(await adminOk(row, req.headers.get("x-admin-token")))) return fail(env, origin, 403, "not_admin", "이 반을 만든 컴퓨터에서만 할 수 있어요");
