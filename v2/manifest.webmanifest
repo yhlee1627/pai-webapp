@@ -1,0 +1,17 @@
+{
+  "id": "./",
+  "name": "피지컬 AI 실습",
+  "short_name": "피지컬 AI",
+  "description": "같은 몸, 다른 두뇌 — micro:bit 분류 로봇을 사람·규칙·학습 모델·VLM으로 움직여 보는 실습",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F6F8FB",
+  "theme_color": "#1F2A44",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
