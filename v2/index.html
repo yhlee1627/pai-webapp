@@ -262,6 +262,7 @@
   .keyCard .hint{margin:0.375rem 0 0}
   .keyCard .hint.bad{color:var(--bad);font-weight:600}
   .utab.install{color:var(--ink);font-weight:600;border-style:dashed}
+  .installHow.flash{background:var(--hi);border-radius:0.25rem;transition:background .6s}
   pre.code{background:var(--screen);color:#E3E8F4;border-radius:0.375rem;padding:0.75rem;overflow:auto;font-size:0.7812rem;line-height:1.45;max-height:22.5rem}
   ol.steps{padding-left:1.375rem;margin:0.375rem 0} ol.steps li{margin:0.3125rem 0}
   .toast{position:fixed;left:50%;bottom:1.5rem;transform:translateX(-50%);background:var(--ink);color:#fff;padding:0.625rem 1rem;border-radius:0.375rem;
@@ -439,7 +440,7 @@
           <button class="tab utab" role="tab" data-tab="records" aria-selected="false" id="tabRecords">기록 <span id="recCount"></span><i class="condDot" aria-hidden="true"></i></button>
           <button class="tab utab" role="tab" data-tab="help" aria-selected="false">도움말</button>
           <button class="tab utab teacherOnly" role="tab" data-tab="settings" aria-selected="false">설정</button>
-          <button class="utab install hidden" id="btnInstall" title="이 컴퓨터에 앱으로 설치해요 (바탕화면 아이콘, 따로 뜨는 창)">앱 설치</button>
+          <button class="utab install" id="btnInstall" title="이 컴퓨터에 앱으로 설치해요 (바탕화면 아이콘, 따로 뜨는 창)">앱 설치</button>
         </nav>
       </div>
 
@@ -820,7 +821,8 @@
       <div class="panel" id="panel-help">
         <h3 style="margin-top:4px">이 컴퓨터에 앱으로 설치 (한 번만)</h3>
         <ol class="steps">
-          <li>Chrome이나 Edge로 이 주소를 열고 두뇌 줄 오른쪽 <b>앱 설치</b>를 누르기 (안 보이면 주소창 오른쪽 끝의 설치 아이콘)</li>
+          <li>Chrome이나 Edge로 이 주소를 열고 두뇌 줄 오른쪽 <b>앱 설치</b>를 누르기</li>
+          <li id="installHow" class="installHow">브라우저가 바로 설치 창을 띄우지 않으면: 주소창 오른쪽 끝의 설치 아이콘을 누르거나, 브라우저 메뉴에서 '앱으로 설치'가 들어간 항목을 고르기</li>
           <li>바탕화면·시작 메뉴에 <b>피지컬 AI 실습</b>이 생기고, 주소창 없이 따로 뜨는 창으로 열려요. 웹앱을 고치면 앱에도 저절로 반영돼요</li>
           <li>VLM 탭 위 칸에 연수 강사의 API 키를 넣으면 바로 써요 (이 컴퓨터에 저장)</li>
           <li>지우려면 앱 창 오른쪽 위 메뉴에서 제거. 설치하지 않고 주소로 열어 써도 기능은 같아요</li>
@@ -2891,19 +2893,36 @@ basic.showIcon(IconNames.Yes)`;
   let installEvt = null;
   const runningAsApp = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
   if ("serviceWorker" in navigator && window.isSecureContext) navigator.serviceWorker.register("sw.js").catch(() => {});
-  window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault(); installEvt = e;
-    $("#btnInstall").classList.toggle("hidden", runningAsApp());
-  });
+  // 브라우저마다 설치하는 곳 (설치 창을 바로 못 띄울 때 도움말에 보여 줌)
+  function installHowText() {
+    const ua = navigator.userAgent, mac = /Mac OS X/.test(ua);
+    if (/Edg\//.test(ua)) return "Edge: 주소창 오른쪽의 '앱 사용 가능' 아이콘을 누르거나, 오른쪽 위 ⋯ 메뉴 → 앱 → '이 사이트를 앱으로 설치'";
+    if (/Firefox\//.test(ua)) return "Firefox는 앱 설치와 micro:bit 연결을 지원하지 않아요. Chrome이나 Edge로 열어 주세요";
+    if (/Chrome\//.test(ua)) return "Chrome: 주소창 오른쪽 끝의 설치 아이콘(화면에 아래 화살표)을 누르거나, 오른쪽 위 ⋮ 메뉴에서 '앱으로 설치'가 들어간 항목 고르기. " +
+      "이미 설치했다면 " + (mac ? "Launchpad·응용 프로그램 폴더" : "시작 메뉴·바탕화면") + "의 '피지컬 AI 실습'으로 열면 돼요";
+    if (/Safari\//.test(ua)) return "Safari: 파일 메뉴 → 'Dock에 추가'로 앱처럼 쓸 수 있지만, Safari는 micro:bit 연결이 안 돼요. Chrome이나 Edge로 열어 설치하세요";
+    return "Chrome이나 Edge로 열면 주소창 오른쪽 끝의 설치 아이콘으로 설치할 수 있어요";
+  }
+  if (runningAsApp()) $("#btnInstall").classList.add("hidden");   // 앱 창에서는 숨김
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; });
   window.addEventListener("appinstalled", () => {
     installEvt = null; $("#btnInstall").classList.add("hidden");
     toast("앱으로 설치했어요. 바탕화면·시작 메뉴의 '피지컬 AI 실습'으로 열어요", "ok");
   });
   $("#btnInstall").addEventListener("click", async () => {
-    if (!installEvt) { showTab("help"); return; }
-    installEvt.prompt();
-    try { await installEvt.userChoice; } catch (e) {}
-    installEvt = null; $("#btnInstall").classList.add("hidden");
+    if (!installEvt) {   // 브라우저가 아직 설치 창을 허락하지 않음 → 도움말에서 이 브라우저의 설치 방법
+      showTab("help");
+      const li = $("#installHow");
+      li.textContent = installHowText();
+      li.scrollIntoView({ block: "center", behavior: "smooth" });
+      li.classList.add("flash"); setTimeout(() => li.classList.remove("flash"), 1600);
+      return;
+    }
+    const evt = installEvt; installEvt = null;   // 설치 창은 한 번만 띄울 수 있음 → 다음에는 도움말 안내로
+    evt.prompt();
+    let choice = {};
+    try { choice = await evt.userChoice; } catch (e) {}
+    if (choice.outcome === "accepted") $("#btnInstall").classList.add("hidden");
   });
   $("#btnResetCalls").addEventListener("click", () => { calls = 0; store.set("pai2.calls", 0); renderCalls(); });
   $("#btnCopyLink").addEventListener("click", () => {
